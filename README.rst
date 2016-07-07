@@ -32,9 +32,13 @@ Usage
 
   from django_apscheduler.jobstores import DjangoJobStore
   
+  # If you want all scheduled jobs to use this store by default,
+  # use the name 'default' instead of 'djangojobstore'.
   scheduler.add_jobstore(DjangoJobStore(), 'djangojobstore')
-
-* Start the scheduler as normal:
+  
+* Register any jobs as you would normally. Note that if you haven't set ``DjangoJobStore`` as the ``'default'`` job store, you'll need to include ``jobstore='djangojobstore'`` in your ``scheduler.add_job`` calls.  
+  
+* Start the scheduler:
 .. code-block:: python
 
   scheduler.start()
