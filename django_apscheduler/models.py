@@ -8,4 +8,4 @@ class DjangoJob(models.Model):
     job_state = models.BinaryField()
 
     class Meta:
-        ordering = ('next_run_time')
+        ordering = ('next_run_time', )
