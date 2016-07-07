@@ -1,6 +1,6 @@
 Django APScheduler
 ==================
-APScheduler for Django.
+`APScheduler <https://github.com/agronholm/apscheduler>`_ for `Django <https://github.com/django/django>`_.
 
 This little wrapper around APScheduler enables storing persistent jobs in the database using Django's ORM rather than requiring SQLAlchemy or some other bloatware.
 
