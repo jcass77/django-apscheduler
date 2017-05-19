@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from threading import Thread
 
 import pytest
@@ -30,7 +32,7 @@ def scheduler():
     return scheduler
 
 def job(*args, **kwargs):
-    print "JOB!"
+    print("JOB")
 
 
 def test_add_job(db, scheduler):

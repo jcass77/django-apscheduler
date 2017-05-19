@@ -22,7 +22,9 @@ setup(
     author='Stas Kaledin',
     author_email='staskaledin@gmail.com',
     license='MIT',
-    packages=find_packages(),
+    packages=find_packages(
+        exclude=("tests", )
+    ),
     install_requires=[
         'django>=1.8',
         'apscheduler>=3.2.0',
