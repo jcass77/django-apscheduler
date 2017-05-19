@@ -1,8 +1,12 @@
-Django APScheduler
-==================
+# Django APScheduler
+
+[![Build Status](https://travis-ci.org/sallyruthstruik/django-apscheduler.svg?branch=master)](https://travis-ci.org/sallyruthstruik/django-apscheduler)
+
 `APScheduler <https://github.com/agronholm/apscheduler>`_ for `Django <https://github.com/django/django>`_.
 
 This little wrapper around APScheduler enables storing persistent jobs in the database using Django's ORM rather than requiring SQLAlchemy or some other bloatware.
+
+It is a fork of
 
 Usage
 -----
