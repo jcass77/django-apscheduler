@@ -2,7 +2,7 @@ language: python
 python:
 - '2.7'
 - '3.4'
-install: pip install tox-travis
+install: pip install tox-travis codecov==2.0.5
 script: tox
 deploy:
   provider: pypi
