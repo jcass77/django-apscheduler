@@ -4,3 +4,5 @@ db
 .idea
 django_apscheduler.egg-info
 .tox
+.coverage
+dist
