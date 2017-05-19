@@ -51,6 +51,21 @@ def test_add_job(db, scheduler):
 
     assert DjangoJob.objects.count() == 1
 
+def test_delete_dbjob_cause_job_delete(db, scheduler):
+    """
+    :type scheduler: DebugScheduler
+    """
+    scheduler.start()
+    scheduler.add_job(job, trigger="interval", seconds=1, id="job")
+
+    assert DjangoJob.objects.count() == 1
+    assert len(scheduler.get_jobs()) == 1
+
+    DjangoJob.objects.first().delete()
+
+    assert len(scheduler.get_jobs()) == 0
+
+
 def test_job_execution_events(db, scheduler):
     ":type scheduler: DebugScheduler"
     assert DjangoJobExecution.objects.count() == 0

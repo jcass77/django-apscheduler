@@ -9,6 +9,8 @@ from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore, ConflictingIdError, JobLookupError
 
 from django.db import IntegrityError, connections
+from django.db.models.signals import post_save
+from django.dispatch.dispatcher import receiver
 
 from django_apscheduler.models import DjangoJobExecution
 from util import serialize_dt, deserialize_dt
@@ -192,6 +194,7 @@ def register_events(scheduler):
     """
     :type scheduler: apscheduler.schedulers.base.BaseScheduler
     """
+
 
     for key, value in scheduler._executors.items():
         scheduler._executors[key] = WrapExecutor(value)
