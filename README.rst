@@ -20,7 +20,7 @@ Usage
 
   ./manage.py migrate
   
-* Instanciate a new scheduler as you would with APScheduler. For example:
+* Instantiate a new scheduler as you would with APScheduler. For example:
 .. code-block:: python
 
   from apscheduler.schedulers.background import BackgroundScheduler
