@@ -1,0 +1,14 @@
+language: python
+python:
+- '2.7'
+- '3.4'
+install: pip install tox-travis codecov==2.0.5
+script: tox
+deploy:
+  provider: pypi
+  user: sallyruthstruik
+  password:
+    secure: io0TiGZEPcfHhf4tWZKO5IqXV81ro8T/K1N8pi9ugsSFJfMafI6uZxHMaXfuRVMYkaQeMEx1CGP8mWHgmLcFHelqcH1EXi4ZYFmXHUF6ttDbDvjjeDrnePi941GIEVA8+Jnh2XCjtrR60kXjK4IpONCF8zXuVzajXFMf2WDpZCj+Z6qyFxPtFpP1iIf/b+bspuv5BHw8LkvpVyzM65CDvqL7etQrUK5IRkAyNXhwGuhTgb6fDBPPmQCmIviZQHvl22gqJmA1JRPuJQEPfUVDEPA1OgS328CWVx+Y0Cg6BZ0XtP7H9jo4sJatbpqcv3EtwVTJ78QnRLZiyPJGgucYw+CDPWfQteTzJrNDxN4aWaRB7YU1cpumobLRYuB1gyIcUrEwED5CrCJqKkmiuAh4cretuQ3h0lAmq45HgCYJNQtANlDEz+iUp8jLX9IEkNL0PvpvKa9lEXiLOR1x0BH+o6URUiPU9dtpUibsLFsCA6ha6U1ct2GLdshyM3+KBcHyZ56O6nva+eR2fmu8tIi6GCpn26CF2Vg45XTV8Jb3zivL7xK/z9QInEdWP1fL2tjo911K8dASESTXw8UbvaeI65rhUjPOKB/zCz1XXJYisxoGzBk7Ivh8oCXSYYFzq0v/8iQITIL0rjugRYMT30+0krzsP2NL4wjih9FYXrWxghA=
+after_success:
+- codecov
+
