@@ -15,6 +15,13 @@ Features in this project:
 * Manage jobs from Django admin interface
 * Monitor your job execution status: duration, exception, traceback, input parameters.
 
+Installation
+------------
+
+```python
+pip install django_apscheduler
+```
+
 Usage
 -----
 
