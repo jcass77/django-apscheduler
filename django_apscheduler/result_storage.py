@@ -1,12 +1,7 @@
 import logging
-
-import datetime
 import time
 
-from apscheduler.events import JobExecutionEvent
-from apscheduler.events import JobSubmissionEvent
-
-from django_apscheduler.models import DjangoJob, DjangoJobExecution
+from django_apscheduler.models import DjangoJobExecution
 from django_apscheduler.util import serialize_dt
 
 
@@ -24,7 +19,7 @@ class DjangoResultStorage(object):
         :param event: JobSubmissionEvent instance
         :return: JobExecution id
         """
-        #type: (DjangoJob, JobSubmissionEvent)->int
+        # type: (DjangoJob, JobSubmissionEvent)->int
 
         # For blocking schedulers we first got FINISH event, and than - SUBMITTED event
         job_execution = DjangoJobExecution.objects.filter(
@@ -52,13 +47,13 @@ class DjangoResultStorage(object):
         :param event: JobExecutionEvent instance
         :return: JobExecution id
         """
-        #type: (DjangoJobExecution, JobExecutionEvent)->int
+        # type: (DjangoJobExecution, JobExecutionEvent)->int
 
         job_execution = DjangoJobExecution.objects.filter(
             job=job,
             status=DjangoJobExecution.SENT,
             run_time=serialize_dt(event.scheduled_run_time)
-        ).order_by("id").last()    #type: DjangoJobExecution
+        ).order_by("id").last()  # type: DjangoJobExecution
 
         if not job_execution:
             job_execution = DjangoJobExecution.objects.create(
@@ -86,10 +81,3 @@ class DjangoResultStorage(object):
             job_execution.status = DjangoJobExecution.ERROR
 
         job_execution.save()
-
-
-
-
-
-
-

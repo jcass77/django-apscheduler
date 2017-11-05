@@ -1,11 +1,10 @@
 # coding=utf-8
-import time
 from django.db import models
 from django.utils.safestring import mark_safe
 
 
 class DjangoJob(models.Model):
-    name = models.CharField(max_length=255, unique=True)    #id of job
+    name = models.CharField(max_length=255, unique=True)  # id of job
     next_run_time = models.DateTimeField(db_index=True)
     # Perhaps consider using PickleField down the track.
     job_state = models.BinaryField()
@@ -16,6 +15,7 @@ class DjangoJob(models.Model):
 
     class Meta:
         ordering = ('next_run_time', )
+
 
 class DjangoJobExecution(models.Model):
     ADDED = u"Added"
@@ -69,5 +69,3 @@ class DjangoJobExecution(models.Model):
 
     class Meta:
         ordering = ('-run_time', )
-
-

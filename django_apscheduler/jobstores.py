@@ -1,24 +1,20 @@
 import logging
 import pickle
 
-import time
-
+from apscheduler import events
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
-from apscheduler.executors.base import BaseExecutor
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore, ConflictingIdError, JobLookupError
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connections
 
-from django.db import IntegrityError, connections
-from django.db.models.signals import post_save
-from django.dispatch.dispatcher import receiver
-
-from django_apscheduler.models import DjangoJobExecution
-from django_apscheduler.result_storage import DjangoResultStorage
-from django_apscheduler.util import serialize_dt, deserialize_dt
 from django_apscheduler.models import DjangoJob
+from django_apscheduler.result_storage import DjangoResultStorage
+from django_apscheduler.util import deserialize_dt, serialize_dt
 
 LOGGER = logging.getLogger("django_apscheduler")
+
 
 class DjangoJobStore(BaseJobStore):
     """
@@ -43,7 +39,6 @@ class DjangoJobStore(BaseJobStore):
             return self._get_jobs(next_run_time__lte=serialize_dt(now))
         except:
             logging.exception("")
-
 
     def get_next_run_time(self):
         try:
@@ -84,8 +79,8 @@ class DjangoJobStore(BaseJobStore):
     def remove_all_jobs(self):
         with connections["default"].cursor() as c:
             c.execute("""
-            DELETE FROM django_apscheduler_djangojobexecution;
-            DELETE FROM django_apscheduler_djangojob
+                DELETE FROM django_apscheduler_djangojobexecution;
+                DELETE FROM django_apscheduler_djangojob
             """)
 
     def _reconstitute_job(self, job_state):
@@ -118,12 +113,11 @@ class DjangoJobStore(BaseJobStore):
         return map(map_jobs, jobs)
 
 
-from apscheduler import events
-
 def event_name(code):
     for key in dir(events):
         if getattr(events, key) == code:
             return key
+
 
 class _EventManager(object):
 
@@ -143,32 +137,27 @@ class _EventManager(object):
             self.LOGGER.exception(str(e))
 
     def _process_submission_event(self, event):
-        #type: (JobSubmissionEvent)->None
+        # type: (JobSubmissionEvent)->None
 
         try:
             job = DjangoJob.objects.get(name=event.job_id)
         except ObjectDoesNotExist:
-            self.LOGGER.warning("Job with id %s not found in database",
-                                event.job_id)
+            self.LOGGER.warning("Job with id %s not found in database", event.job_id)
             return
 
-        result_id = self.storage.get_or_create_job_execution(
-            job, event
-        )
+        self.storage.get_or_create_job_execution(job, event)
 
     def _process_execution_event(self, event):
-        #type: (JobExecutionEvent)->None
+        # type: (JobExecutionEvent)->None
 
         try:
             job = DjangoJob.objects.get(name=event.job_id)
         except ObjectDoesNotExist:
-            self.LOGGER.warning("Job with id %s not found in database",
-                                event.job_id)
+            self.LOGGER.warning("Job with id %s not found in database", event.job_id)
             return
 
         self.storage.register_job_executed(job, event)
 
+
 def register_events(scheduler, result_storage=None):
     scheduler.add_listener(_EventManager(result_storage))
-
-

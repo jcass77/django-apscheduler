@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.utils.timezone import is_aware, make_naive, is_naive, make_aware
+from django.utils.timezone import is_aware, is_naive, make_aware, make_naive
 
 
 def serialize_dt(dt):
@@ -11,6 +11,7 @@ def serialize_dt(dt):
     if not settings.USE_TZ and is_aware(dt):
         return make_naive(dt)
     return dt
+
 
 def deserialize_dt(dt):
     if not settings.USE_TZ and is_naive(dt):
