@@ -1,15 +1,13 @@
 Django APScheduler
 ================================
 
-![Build status](http://travis-ci.org/sallyruthstruik/django-apscheduler.svg?branch=master)
+![Build status](http://travis-ci.org/jarekwg/django-apscheduler.svg?branch=master)
 [![codecov](https://codecov.io/gh/sallyruthstruik/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/sallyruthstruik/django-apscheduler)
 [![PyPI version](https://badge.fury.io/py/django_apscheduler.svg)](https://badge.fury.io/py/django_apscheduler)
 
 `APScheduler <https://github.com/agronholm/apscheduler>`_ for `Django <https://github.com/django/django>`_.
 
 This little wrapper around APScheduler enables storing persistent jobs in the database using Django's ORM rather than requiring SQLAlchemy or some other bloatware.
-
-It is a fork of https://github.com/jarekwg/django-apscheduler project (thanks to author), which had some errors, no tests, no PyPI package.
 
 Features in this project:
 
@@ -33,7 +31,7 @@ Usage
   ```python
   ./manage.py migrate
   ```
-* Instanciate a new scheduler as you would with APScheduler. For example:
+* Instantiate a new scheduler as you would with APScheduler. For example:
   ```python
   from apscheduler.schedulers.background import BackgroundScheduler
   
