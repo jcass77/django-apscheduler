@@ -13,8 +13,8 @@ from django.db.models.signals import post_save
 from django.dispatch.dispatcher import receiver
 
 from django_apscheduler.models import DjangoJobExecution
-from util import serialize_dt, deserialize_dt
-from .models import DjangoJob
+from django_apscheduler.util import serialize_dt, deserialize_dt
+from django_apscheduler.models import DjangoJob
 
 
 class DjangoJobStore(BaseJobStore):
