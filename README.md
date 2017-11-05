@@ -60,27 +60,41 @@ Usage
   ![](http://dl3.joxi.net/drive/2017/05/19/0003/0636/258684/84/bebc279ecd.png)
   
 
-* Register any jobs as you would normally. Note that if you haven't set ``DjangoJobStore`` as the ``'default'`` job store, you'll need to include ``jobstore='djangojobstore'`` in your ``scheduler.add_job`` calls.  
+* Register any jobs as you would normally. Note that if you haven't set ``DjangoJobStore`` as the ``'default'`` job store,
+  you'll need to include ``jobstore='djangojobstore'`` in your ``scheduler.add_job`` calls.
+
+* **Don't forget to give unique id for each job, for example:**
+  ```python
+
+  @scheduler.schedule_job("interval", seconds=60, id="job")
+  def job():
+    ...
+  ```
   
 * Start the scheduler:
   ```python
   scheduler.start()
   ```
   
-Full example:
+Full example project you can find in example dir. Code snippet:
 ```python
-from apscheduler.executors.pool import ThreadPoolExecutor
-from apscheduler.schedulers.blocking import BlockingScheduler
+import time
+from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events
 
-scheduler = BlockingScheduler()
 
-scheduler.add_jobstore(DjangoJobStore())
-scheduler.add_executor(ThreadPoolExecutor(10))
+scheduler = BackgroundScheduler()
+scheduler.add_jobstore(DjangoJobStore(), "default")
+
+@scheduler.scheduled_job("interval", seconds=10, id="test")
+def test_job():
+    time.sleep(4)
+    print "I'm a test job!"
+    # raise ValueError("Olala!")
 
 register_events(scheduler)
 
-#will block you here because of BlockingScheduler usage
 scheduler.start()
+print "Scheduler started!"
 
 ```
