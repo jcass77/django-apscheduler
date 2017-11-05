@@ -61,14 +61,14 @@ Usage
     register_events(scheduler)
   ```
   
-  It gives you such interface:
+  It provides the following interface:
   ![](http://dl3.joxi.net/drive/2017/05/19/0003/0636/258684/84/bebc279ecd.png)
   
 
 * Register any jobs as you would normally. Note that if you haven't set ``DjangoJobStore`` as the ``'default'`` job store,
   you'll need to include ``jobstore='djangojobstore'`` in your ``scheduler.add_job`` calls.
 
-* **Don't forget to give unique id for each job, for example:**
+* **Don't forget to give each job a unique id. For example:**
   ```python
 
   @scheduler.schedule_job("interval", seconds=60, id="job")
@@ -81,7 +81,7 @@ Usage
   scheduler.start()
   ```
   
-Full example project you can find in example dir. Code snippet:
+A full example project can be found in the example dir. Code snippet:
 ```python
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
