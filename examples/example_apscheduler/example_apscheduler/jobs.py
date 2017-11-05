@@ -10,22 +10,22 @@ logging.basicConfig()
 
 scheduler = BackgroundScheduler()
 
-scheduler.add_jobstore(DjangoJobStore(), "default")
-
-
-@scheduler.scheduled_job("interval", seconds=10, id="test")
-def test_job():
-    time.sleep(4)
-    print "I'm a test job!"
-    # raise ValueError("Olala!")
-
-def listener(event):
-    print event, type(event), event.__dict__
-
-register_events(scheduler)
-# scheduler.add_listener(listener)
-
-scheduler.start()
+# scheduler.add_jobstore(DjangoJobStore(), "default")
+#
+#
+# @scheduler.scheduled_job("interval", seconds=10, id="test")
+# def test_job():
+#     time.sleep(4)
+#     print "I'm a test job!"
+#     # raise ValueError("Olala!")
+#
+# def listener(event):
+#     print event, type(event), event.__dict__
+#
+# register_events(scheduler)
+# # scheduler.add_listener(listener)
+#
+# scheduler.start()
 
 
 print "Scheduler started!"
