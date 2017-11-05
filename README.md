@@ -1,7 +1,7 @@
 Django APScheduler
 ================================
 
-![Build status](http://travis-ci.org/jarekwg/django-apscheduler.svg?branch=master)
+[![Build status](http://travis-ci.org/jarekwg/django-apscheduler.svg?branch=master)](http://travis-ci.org/jarekwg/django-apscheduler)
 [![codecov](https://codecov.io/gh/sallyruthstruik/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/sallyruthstruik/django-apscheduler)
 [![PyPI version](https://badge.fury.io/py/django_apscheduler.svg)](https://badge.fury.io/py/django_apscheduler)
 
