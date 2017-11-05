@@ -3,19 +3,22 @@ import pickle
 
 import time
 
-from apscheduler.events import JobExecutionEvent
+from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from apscheduler.executors.base import BaseExecutor
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore, ConflictingIdError, JobLookupError
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.db import IntegrityError, connections
 from django.db.models.signals import post_save
 from django.dispatch.dispatcher import receiver
 
 from django_apscheduler.models import DjangoJobExecution
+from django_apscheduler.result_storage import DjangoResultStorage
 from django_apscheduler.util import serialize_dt, deserialize_dt
 from django_apscheduler.models import DjangoJob
 
+LOGGER = logging.getLogger("django_apscheduler")
 
 class DjangoJobStore(BaseJobStore):
     """
@@ -122,79 +125,50 @@ def event_name(code):
         if getattr(events, key) == code:
             return key
 
-class WrapExecutor(object):
+class _EventManager(object):
 
-    def __init__(self, executor):
-        ":type executor: BaseExecutor"
-        self.executor = executor
+    LOGGER = LOGGER.getChild("events")
 
-        self._orig_do_submit_job = self.executor._do_submit_job
-        self._orig_run_job_success = self.executor._run_job_success
-        self._orig_run_job_error = self.executor._run_job_error
+    def __init__(self, storage=None):
+        self.storage = storage or DjangoResultStorage()
 
-        self.executor._do_submit_job = self._do_submit_job
-        self.executor._run_job_success = self._run_job_success
-        self.executor._run_job_error = self._run_job_error
+    def __call__(self, event):
+        # print event, type(event), event.__dict__
+        try:
+            if isinstance(event, JobSubmissionEvent):
+                self._process_submission_event(event)
+            elif isinstance(event, JobExecutionEvent):
+                self._process_execution_event(event)
+        except Exception as e:
+            self.LOGGER.exception(str(e))
 
-    def __getattr__(self, item):
-        return getattr(self.executor, item)
+    def _process_submission_event(self, event):
+        #type: (JobSubmissionEvent)->None
 
+        try:
+            job = DjangoJob.objects.get(name=event.job_id)
+        except ObjectDoesNotExist:
+            self.LOGGER.warning("Job with id %s not found in database",
+                                event.job_id)
+            return
 
-    def _do_submit_job(self, job, run_times):
-        ":type job: Job"
-
-        dbJob = DjangoJob.objects.get(name=job.id)
-        DjangoJobExecution.objects.create(
-            status=DjangoJobExecution.SENT,
-            args=repr(job.args),
-            kwargs=repr(job.kwargs),
-            started=time.time(),
-            job=dbJob,
-            run_time=serialize_dt(job.next_run_time)
+        result_id = self.storage.get_or_create_job_execution(
+            job, event
         )
 
-        return self._orig_do_submit_job(job, run_times)
+    def _process_execution_event(self, event):
+        #type: (JobExecutionEvent)->None
 
-    def _get_execution(self, job_id):
-        return DjangoJobExecution.objects.filter(
-            job__name=job_id
-        ).first()
-
-    def _run_job_success(self, job_id, events):
         try:
-            event = events[0]   #type: JobExecutionEvent
-        except:
-            event = None
+            job = DjangoJob.objects.get(name=event.job_id)
+        except ObjectDoesNotExist:
+            self.LOGGER.warning("Job with id %s not found in database",
+                                event.job_id)
+            return
 
-        dje = self._get_execution(job_id)
-        dje.finished = time.time()
-        dje.duration = dje.finished - float(dje.started)
+        self.storage.register_job_executed(job, event)
 
-        if event and event.exception:
-            dje.status = DjangoJobExecution.ERROR
-            dje.exception = event.exception
-            dje.traceback = event.traceback
-        else:
-            dje.status = DjangoJobExecution.SUCCESS
-        dje.save()
-
-        return self._orig_run_job_success(job_id, events)
-
-    def _run_job_error(self, job_id, exc, traceback=None):
-        dje = self._get_execution(job_id)
-
-        dje.status = DjangoJobExecution.ERROR
-        dje.exception = exc
-        dje.traceback = traceback
-        dje.save()
-
-        return self._orig_run_job_error(job_id, exc, traceback)
-
-def register_events(scheduler):
-    """
-    :type scheduler: apscheduler.schedulers.base.BaseScheduler
-    """
+def register_events(scheduler, result_storage=None):
+    scheduler.add_listener(_EventManager(result_storage))
 
 
-    for key, value in scheduler._executors.items():
-        scheduler._executors[key] = WrapExecutor(value)

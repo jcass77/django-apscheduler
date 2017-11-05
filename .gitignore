@@ -6,3 +6,4 @@ django_apscheduler.egg-info
 .tox
 .coverage
 dist
+*.sqlite3

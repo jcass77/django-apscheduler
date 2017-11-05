@@ -5,7 +5,7 @@ from django.utils.safestring import mark_safe
 
 
 class DjangoJob(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, unique=True)    #id of job
     next_run_time = models.DateTimeField(db_index=True)
     # Perhaps consider using PickleField down the track.
     job_state = models.BinaryField()
@@ -41,9 +41,6 @@ class DjangoJobExecution(models.Model):
                                   default=None, null=True)
     finished = models.DecimalField(max_digits=15, decimal_places=2,
                                    default=None, null=True)
-
-    args = models.CharField(max_length=1000)
-    kwargs = models.CharField(max_length=1000)
 
     exception = models.CharField(max_length=1000, null=True)
     traceback = models.TextField(null=True)

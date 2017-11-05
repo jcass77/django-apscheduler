@@ -2,17 +2,23 @@ from __future__ import print_function
 
 from threading import Thread
 
+import datetime
 import pytest
 from apscheduler import events
-from apscheduler.events import JobEvent, JobExecutionEvent
+from apscheduler.events import JobEvent, JobExecutionEvent, JobSubmissionEvent
 from apscheduler.executors.base import BaseExecutor
 from apscheduler.executors.debug import DebugExecutor
 from apscheduler.schedulers.base import BaseScheduler
+from mock.mock import patch
+from pytz import utc
 
 from django_apscheduler.jobstores import DjangoJobStore, register_events
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 
 import logging
+
+from django_apscheduler.util import deserialize_dt
+
 logging.basicConfig()
 
 class DebugScheduler(BaseScheduler):
@@ -51,25 +57,40 @@ def test_add_job(db, scheduler):
 
     assert DjangoJob.objects.count() == 1
 
+@pytest.mark.target
+def test_remove_job(db, scheduler):
+    #This test checks issue https://github.com/jarekwg/django-apscheduler/issues/6
 
-def test_job_execution_events(db, scheduler):
-    ":type scheduler: DebugScheduler"
-    assert DjangoJobExecution.objects.count() == 0
-
-    register_events(scheduler)
-
+    assert isinstance(scheduler, DebugScheduler)
+    scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
 
+    assert DjangoJob.objects.count() == 1
+    assert isinstance(scheduler, DebugScheduler)
+    assert len(scheduler.get_jobs()) == 1
+
+    dbJob = DjangoJob.objects.first()
+    dbJob.delete()
+
+    assert len(scheduler.get_jobs()) == 0
+
+def test_job_events(db, scheduler):
+    register_events(scheduler)
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
+    scheduler.start()
 
-    ex = scheduler._executors["default"]    #type: BaseExecutor
+    executor = scheduler._executors["default"]
 
-    ex.submit_job(scheduler.get_job("job"), [])
+    dj = DjangoJob.objects.last()
+    dj.next_run_time -= datetime.timedelta(seconds=2)
+    dj.save()
 
-    def make_checks(checks, counts=1):
-        assert DjangoJobExecution.objects.count() == counts
-        d = DjangoJobExecution.objects.first()
-        for key, value in checks.items():
-            assert getattr(d, key) == value
+    now = datetime.datetime.now(utc)
+    scheduler._dispatch_event(JobExecutionEvent(4096, "job", None, now))
+    scheduler._dispatch_event(JobSubmissionEvent(32768, "job", None, [now]))
 
-    make_checks(dict(status=DjangoJobExecution.SUCCESS))
+    assert DjangoJobExecution.objects.count() == 1
+
+
+
+
