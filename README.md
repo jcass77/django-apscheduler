@@ -5,7 +5,7 @@ Django APScheduler
 [![codecov](https://codecov.io/gh/sallyruthstruik/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/sallyruthstruik/django-apscheduler)
 [![PyPI version](https://badge.fury.io/py/django_apscheduler.svg)](https://badge.fury.io/py/django_apscheduler)
 
-`APScheduler <https://github.com/agronholm/apscheduler>`_ for `Django <https://github.com/django/django>`_.
+[APScheduler](https://github.com/agronholm/apscheduler) for [Django](https://github.com/django/django).
 
 This little wrapper around APScheduler enables storing persistent jobs in the database using Django's ORM rather than requiring SQLAlchemy or some other bloatware.
 
