@@ -92,14 +92,14 @@ Usage
 A full example project can be found in the example dir. Code snippet:
 ```python
 import time
-from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore, register_events
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 
 scheduler = BackgroundScheduler()
 scheduler.add_jobstore(DjangoJobStore(), "default")
 
-@scheduler.scheduled_job("interval", seconds=10, id="test")
+@register_job(scheduler, "interval", seconds=1)
 def test_job():
     time.sleep(4)
     print("I'm a test job!")
