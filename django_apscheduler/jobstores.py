@@ -110,7 +110,7 @@ class DjangoJobStore(BaseJobStore):
             job.next_run_time = deserialize_dt(job.next_run_time)
             return job
 
-        return map(map_jobs, jobs)
+        return list(map(map_jobs, jobs))
 
 
 def event_name(code):
