@@ -5,6 +5,7 @@ from apscheduler import events
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore, ConflictingIdError, JobLookupError
+from apscheduler.schedulers.base import BaseScheduler
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
@@ -161,3 +162,14 @@ class _EventManager(object):
 
 def register_events(scheduler, result_storage=None):
     scheduler.add_listener(_EventManager(result_storage))
+
+
+def register_job(scheduler, *a, **k):
+    # type: (BaseScheduler)->callable
+
+    def inner(func):
+        k.setdefault("id", "{}.{}".format(func.__module__, func.__name__))
+        scheduler.add_job(func, *a, **k)
+        return func
+
+    return inner

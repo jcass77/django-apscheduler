@@ -9,7 +9,7 @@ from apscheduler.executors.debug import DebugExecutor
 from apscheduler.schedulers.base import BaseScheduler
 from pytz import utc
 
-from django_apscheduler.jobstores import DjangoJobStore, register_events
+from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 
 logging.basicConfig()
@@ -70,6 +70,20 @@ def test_remove_job(db, scheduler):
     dbJob.delete()
 
     assert len(scheduler.get_jobs()) == 0
+
+
+def test_register_job_dec(db, scheduler):
+
+    register_job(scheduler, "interval", seconds=1)(job)
+
+    scheduler.start()
+
+    assert DjangoJob.objects.count() == 1
+    dbj = DjangoJob.objects.first()
+    assert dbj.name == "tests.test_jobstore.job"
+
+    j = scheduler.get_jobs()[0]
+    assert j.id == "tests.test_jobstore.job"
 
 
 def test_job_events(db, scheduler):
