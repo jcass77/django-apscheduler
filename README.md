@@ -75,6 +75,14 @@ Usage
   def job():
     ...
   ```
+  or use custom decorator for job registration. It will give id automatically:
+  ```python
+  from django_apscheduler.jobstores import register_job
+
+  @register_job("interval", seconds=60)
+  def job():
+    ...
+  ```
 
 * Start the scheduler:
   ```python
