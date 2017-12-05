@@ -1,6 +1,6 @@
 appdirs==1.4.3
 APScheduler==3.3.1
-Django==1.11.1
+Django==2.0.0
 -e git+git@github.com:sallyruthstruik/django-apscheduler.git@9cb356e03c84850734eacadea946ccc6d24c69d2#egg=django_apscheduler
 funcsigs==1.0.2
 futures==3.1.1

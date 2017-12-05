@@ -27,7 +27,7 @@ class DjangoJobExecution(models.Model):
     ERROR = u"Error!"
     SUCCESS = u"Executed"
 
-    job = models.ForeignKey(DjangoJob)
+    job = models.ForeignKey(DjangoJob, on_delete=models.CASCADE)
     status = models.CharField(max_length=50, choices=[
         [x, x]
         for x in [ADDED, SENT, MAX_INSTANCES, MISSED, MODIFIED,
