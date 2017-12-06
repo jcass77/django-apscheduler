@@ -71,7 +71,7 @@ Usage
 * **Don't forget to give each job a unique id. For example:**
   ```python
 
-  @scheduler.schedule_job("interval", seconds=60, id="job")
+  @scheduler.scheduled_job("interval", seconds=60, id="job")
   def job():
     ...
   ```
