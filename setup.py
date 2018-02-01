@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='django_apscheduler',
-    version='0.2.2',
+    version='0.2.3',
     description='APScheduler for Django',
     classifiers=[
         "Development Status :: 4 - Beta",

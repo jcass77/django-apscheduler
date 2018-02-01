@@ -1,6 +1,38 @@
 # coding=utf-8
-from django.db import models
+from django.db import models, connection
 from django.utils.safestring import mark_safe
+import time
+import logging
+
+LOGGER = logging.getLogger("django_apscheduler")
+
+class DjangoJobManager(models.Manager):
+    """
+    This manager pings database each request after 30s IDLE to prevent MysqlGoneAway error
+    """
+    _last_ping = 0
+    _ping_interval = 30
+
+    def get_queryset(self):
+        self.__ping()
+        return super(DjangoJobManager, self).get_queryset()
+
+    def __ping(self):
+        if time.time() - self._last_ping < self._ping_interval:
+            return
+
+        try:
+            with connection.cursor() as c:
+                c.execute("SELECT 1")
+        except Exception as e:
+            self.__reconnect()
+
+        self._last_ping = time.time()
+
+    def __reconnect(self):
+        LOGGER.warning("Mysql closed the connection. Perform reconnect...")
+        connection.connection.close()
+        connection.connection = None
 
 
 class DjangoJob(models.Model):
@@ -8,6 +40,8 @@ class DjangoJob(models.Model):
     next_run_time = models.DateTimeField(db_index=True)
     # Perhaps consider using PickleField down the track.
     job_state = models.BinaryField()
+
+    objects = DjangoJobManager()
 
     def __str__(self):
         status = 'next run at: %s' % self.next_run_time if self.next_run_time else 'paused'

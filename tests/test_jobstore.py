@@ -7,10 +7,15 @@ import pytest
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from apscheduler.executors.debug import DebugExecutor
 from apscheduler.schedulers.base import BaseScheduler
+from django.db import connection, transaction
+from django.db.backends.utils import CursorWrapper
+from django.db.models.sql.compiler import SQLCompiler
+from django.db.utils import OperationalError
 from pytz import utc
 
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
-from django_apscheduler.models import DjangoJob, DjangoJobExecution
+from django_apscheduler.models import DjangoJob, DjangoJobExecution, DjangoJobManager
+from tests.compat import mock_compat
 
 logging.basicConfig()
 
@@ -100,3 +105,22 @@ def test_job_events(db, scheduler):
     scheduler._dispatch_event(JobSubmissionEvent(32768, "job", None, [now]))
 
     assert DjangoJobExecution.objects.count() == 1
+
+@pytest.mark.test_reconnect_on_db_error
+def test_reconnect_on_db_error(transactional_db):
+
+    counter = [0]
+    def mocked_execute(self, *a, **k):
+        counter[0] += 1
+
+        if counter[0] == 1:
+            raise OperationalError()
+        else:
+            return []
+
+    with mock_compat.patch.object(CursorWrapper, "execute", mocked_execute):
+        store = DjangoJobStore()
+        DjangoJob.objects._last_ping = 0
+
+        assert store.get_due_jobs(now=datetime.datetime.now()) == []
+

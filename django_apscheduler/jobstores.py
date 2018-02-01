@@ -10,7 +10,7 @@ from apscheduler.schedulers.base import BaseScheduler
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
-from django.db.utils import OperationalError
+from django.db.utils import OperationalError, ProgrammingError
 
 from django_apscheduler.models import DjangoJob
 from django_apscheduler.result_storage import DjangoResultStorage
@@ -25,7 +25,7 @@ def ignore_database_error(func):
     def inner(*a, **k):
         try:
             return func(*a, **k)
-        except OperationalError as e:
+        except (OperationalError, ProgrammingError) as e:
             warnings.warn(
                 "Got OperationalError: {}. "
                 "Please, check that you have migrated the database via python manage.py migrate".format(e),
@@ -209,6 +209,24 @@ def register_events(scheduler, result_storage=None):
 
 
 def register_job(scheduler, *a, **k):
+    """
+
+    Helper decorator for job registration.
+    Automatically fills id parameter to prevent jobs duplication.
+    See this comment for explanation: https://github.com/jarekwg/django-apscheduler/pull/9#issuecomment-342074372
+
+    Usage example::
+
+        @register_job(scheduler, "interval", seconds=1)
+        def test_job():
+            time.sleep(4)
+            print("I'm a test job!")
+
+    :param scheduler: Scheduler instance
+    :type scheduler: BaseScheduler
+
+    :param a, k: Params, will be passed to scheduler.add_job method. See :func:`BaseScheduler.add_job`
+    """
     # type: (BaseScheduler)->callable
 
     def inner(func):

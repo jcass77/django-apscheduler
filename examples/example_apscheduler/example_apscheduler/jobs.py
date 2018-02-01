@@ -8,9 +8,8 @@ scheduler = BackgroundScheduler()
 scheduler.add_jobstore(DjangoJobStore(), "default")
 
 
-@register_job(scheduler, "interval", seconds=1)
+@register_job(scheduler, "interval", seconds=30, replace_existing=True)
 def test_job():
-    time.sleep(4)
     print("I'm a test job!")
     # raise ValueError("Olala!")
 
