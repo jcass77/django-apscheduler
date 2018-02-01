@@ -1,8 +1,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='django_apscheduler',
-    version='0.2.3',
+    name='django-apscheduler',
+    version='0.2.4',
     description='APScheduler for Django',
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -19,9 +19,9 @@ setup(
         "Framework :: Django :: 1.9",
     ],
     keywords='django apscheduler django-apscheduler',
-    url='http://github.com/sallyruthstruik/django-apscheduler',
-    author='Stas Kaledin',
-    author_email='staskaledin@gmail.com',
+    url='http://github.com/jarekwg/django-apscheduler',
+    author='Jarek Glowacki, Stas Kaledin',
+    author_email='jarekwg@gmail.com, staskaledin@gmail.com',
     license='MIT',
     packages=find_packages(
         exclude=("tests", )
