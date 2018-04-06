@@ -37,7 +37,7 @@ class DjangoJobManager(models.Manager):
 
 class DjangoJob(models.Model):
     name = models.CharField(max_length=255, unique=True)  # id of job
-    next_run_time = models.DateTimeField(db_index=True)
+    next_run_time = models.DateTimeField(db_index=True, blank=True, null=True)
     # Perhaps consider using PickleField down the track.
     job_state = models.BinaryField()
 

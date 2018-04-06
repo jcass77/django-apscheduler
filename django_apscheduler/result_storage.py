@@ -16,6 +16,7 @@ class DjangoResultStorage(object):
         """
         Create and return new job execution item.
         :param job: DjangoJob instance
+        :type job: django_apscheduler.models.DjangoJob
         :param event: JobSubmissionEvent instance
         :return: JobExecution id
         """
@@ -29,7 +30,11 @@ class DjangoResultStorage(object):
 
         if job_execution and job_execution.started is None:
             job_execution.started = time.time()
-            job_execution.duration = float(job_execution.finished) - float(job_execution.started)
+            try:
+                job_execution.duration = float(job_execution.finished) - float(job_execution.started)
+            except:
+                job_execution.duration = None
+
             job_execution.save()
             return job_execution.id
 

@@ -15,6 +15,8 @@ from pytz import utc
 
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 from django_apscheduler.models import DjangoJob, DjangoJobExecution, DjangoJobManager
+from django_apscheduler.result_storage import DjangoResultStorage
+from django_apscheduler.util import serialize_dt
 from tests.compat import mock_compat
 
 logging.basicConfig()
@@ -106,7 +108,28 @@ def test_job_events(db, scheduler):
 
     assert DjangoJobExecution.objects.count() == 1
 
-@pytest.mark.test_reconnect_on_db_error
+
+def test_issue_15(db):
+    """
+    This test covers bug from https://github.com/jarekwg/django-apscheduler/issues/15
+    """
+
+    storage = DjangoResultStorage()
+
+    srt = datetime.datetime.now()
+
+    job = DjangoJob.objects.create(name="test", next_run_time=datetime.datetime.now())
+    DjangoJobExecution.objects.create(
+        job=job,
+        run_time=serialize_dt(srt)
+    )
+
+    storage.get_or_create_job_execution(
+        job,
+        mock_compat.Mock(scheduled_run_times=[srt])
+    )
+
+
 def test_reconnect_on_db_error(transactional_db):
 
     counter = [0]
