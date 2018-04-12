@@ -1,3 +1,4 @@
+import random
 import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -8,8 +9,9 @@ scheduler = BackgroundScheduler()
 scheduler.add_jobstore(DjangoJobStore(), "default")
 
 
-@register_job(scheduler, "interval", seconds=30, replace_existing=True)
+@register_job(scheduler, "interval", seconds=5, replace_existing=True)
 def test_job():
+    time.sleep(random.randrange(1, 100, 1)/100.)
     print("I'm a test job!")
     # raise ValueError("Olala!")
 
