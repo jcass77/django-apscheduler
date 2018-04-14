@@ -31,8 +31,12 @@ class DjangoJobManager(models.Manager):
 
     def __reconnect(self):
         LOGGER.warning("Mysql closed the connection. Perform reconnect...")
-        connection.connection.close()
-        connection.connection = None
+
+        if connection.connection:
+            connection.connection.close()
+            connection.connection = None
+        else:
+            LOGGER.warning("Connection was already closed.")
 
 
 class DjangoJob(models.Model):
