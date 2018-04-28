@@ -22,3 +22,5 @@ urlpatterns = [
 ]
 
 import example_apscheduler.jobs  # NOQA @isort:skip
+import logging
+logging.basicConfig(level="DEBUG")

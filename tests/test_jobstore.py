@@ -60,6 +60,14 @@ def test_add_job(db, scheduler):
 
     assert DjangoJob.objects.count() == 1
 
+def test_issue_20(db, scheduler):
+    assert isinstance(scheduler, DebugScheduler)
+    scheduler.add_job(job, trigger="interval", seconds=1, id="job")
+    scheduler.start()
+    assert DjangoJob.objects.count() == 1
+    scheduler.remove_job("job")
+    assert DjangoJob.objects.count() == 0
+
 
 @pytest.mark.target
 def test_remove_job(db, scheduler):
