@@ -88,16 +88,19 @@ class DjangoJobStore(BaseJobStore):
 
     @ignore_database_error()
     def add_job(self, job):
-        if DjangoJob.objects.filter(
-            name=job.id
-        ).exists():
-            raise ConflictingIdError(job.id)
-
-        DjangoJob.objects.create(
+        dbJob, created = DjangoJob.objects.get_or_create(
+            defaults=dict(
+                next_run_time=serialize_dt(job.next_run_time),
+                job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol)
+            ),
             name=job.id,
-            next_run_time=serialize_dt(job.next_run_time),
-            job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol)
         )
+
+        if not created:
+            LOGGER.warning("Job with id %s already in jobstore. I'll refresh it", job.id)
+            dbJob.next_run_time = serialize_dt(job.next_run_time)
+            dbJob.job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol)
+            dbJob.save()
 
     @ignore_database_error()
     def update_job(self, job):
