@@ -76,7 +76,7 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def get_next_run_time(self):
         try:
-            return deserialize_dt(DjangoJob.objects.first().next_run_time)
+            return deserialize_dt(DjangoJob.objects.filter(next_run_time__isnull=False).earliest('next_run_time').next_run_time)
         except AttributeError:  # no active jobs
             return None
 
