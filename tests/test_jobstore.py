@@ -4,6 +4,7 @@ import datetime
 import logging
 
 import pytest
+import pytz
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from apscheduler.executors.debug import DebugExecutor
 from apscheduler.schedulers.base import BaseScheduler
@@ -28,12 +29,12 @@ class DebugScheduler(BaseScheduler):
         pass
 
     def wakeup(self):
-        pass
+        self._process_jobs()
 
 
 @pytest.fixture()
 def scheduler():
-    scheduler = DebugScheduler()
+    scheduler = DebugScheduler(timezone=pytz.timezone("Europe/Moscow"))
     scheduler.add_jobstore(DjangoJobStore())
     scheduler.add_executor(DebugExecutor())
 
@@ -60,6 +61,7 @@ def test_add_job(db, scheduler):
 
     assert DjangoJob.objects.count() == 1
 
+
 def test_issue_20(db, scheduler):
     assert isinstance(scheduler, DebugScheduler)
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
@@ -85,6 +87,22 @@ def test_remove_job(db, scheduler):
     dbJob.delete()
 
     assert len(scheduler.get_jobs()) == 0
+
+
+def job_for_tests():
+    job_for_tests.mock()
+
+
+job_for_tests.mock = mock_compat.Mock()
+
+ 
+def test_try_add_job_then_start(db, scheduler):
+    assert isinstance(scheduler, DebugScheduler)
+
+    scheduler.add_job(job_for_tests, next_run_time=datetime.datetime.now(pytz.timezone("Europe/Moscow")), misfire_grace_time=None)
+    scheduler.start()
+    scheduler._process_jobs()
+    assert job_for_tests.mock.call_count == 1
 
 
 def test_register_job_dec(db, scheduler):

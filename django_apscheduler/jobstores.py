@@ -72,13 +72,14 @@ class DjangoJobStore(BaseJobStore):
             LOGGER.exception("Exception during getting jobs")
             return []
 
-
     @ignore_database_error()
     def get_next_run_time(self):
         try:
             return deserialize_dt(DjangoJob.objects.filter(next_run_time__isnull=False).earliest('next_run_time').next_run_time)
-        except AttributeError:  # no active jobs
-            return None
+        except ObjectDoesNotExist:  # no active jobs
+            return
+        except:
+            LOGGER.exception("Exception during get_next_run_time for jobs")
 
     @ignore_database_error(on_error_value=[])
     def get_all_jobs(self):
@@ -157,7 +158,9 @@ class DjangoJobStore(BaseJobStore):
                 failed_job_ids.add(job_id)
 
         # Remove all the jobs we failed to restore
-        DjangoJob.objects.filter(name__in=failed_job_ids).delete()
+        if failed_job_ids:
+            LOGGER.warning("Remove bad jobs: %s", failed_job_ids)
+            DjangoJob.objects.filter(name__in=failed_job_ids).delete()
 
         def map_jobs(job):
             job.next_run_time = deserialize_dt(job.next_run_time)
