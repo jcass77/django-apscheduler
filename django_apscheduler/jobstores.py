@@ -160,7 +160,7 @@ class DjangoJobStore(BaseJobStore):
         # Remove all the jobs we failed to restore
         if failed_job_ids:
             LOGGER.warning("Remove bad jobs: %s", failed_job_ids)
-            DjangoJob.objects.filter(name__in=failed_job_ids).delete()
+            DjangoJob.objects.filter(id__in=failed_job_ids).delete()
 
         def map_jobs(job):
             job.next_run_time = deserialize_dt(job.next_run_time)
