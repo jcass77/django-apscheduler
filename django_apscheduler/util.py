@@ -8,12 +8,12 @@ def serialize_dt(dt):
     :param dt:
     :return:
     """
-    if not settings.USE_TZ and is_aware(dt):
+    if not settings.USE_TZ and dt and is_aware(dt):
         return make_naive(dt)
     return dt
 
 
 def deserialize_dt(dt):
-    if not settings.USE_TZ and is_naive(dt):
+    if not settings.USE_TZ and dt and is_naive(dt):
         return make_aware(dt)
     return dt
