@@ -25,13 +25,17 @@ pip install django-apscheduler
 Usage
 -----
 
-* Add ``django_apscheduler`` to ``INSTALLED_APPS`` in your Django project settings:
+* Add ``django_apscheduler`` to ``INSTALLED_APPS`` in your Django project settings, You can also specify a different
+format for displaying runtime timestamps in the Django admin site using ``APSCHEDULER_DATETIME_FORMAT``:
   ```python
 
   INSTALLED_APPS = (
     ...
     django_apscheduler,
   )
+
+  APSCHEDULER_DATETIME_FORMAT =  "N j, Y, f:s a"  # Default
+
   ```
 
 * Run migrations:
