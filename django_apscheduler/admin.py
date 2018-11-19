@@ -5,6 +5,7 @@ from django.db.models import Avg
 from django.utils.timezone import now
 
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
+from django_apscheduler import util
 
 
 def execute_now(ma, r, qs):
@@ -32,7 +33,7 @@ class DjangoJobAdmin(admin.ModelAdmin):
         return super(DjangoJobAdmin, self).get_queryset(request)
 
     def next_run_time_sec(self, obj):
-        return obj.next_run_time.strftime("%Y-%m-%d %H:%M:%S")
+        return util.localize(obj.next_run_time)
 
     def average_duration(self, obj):
         return self._durations.get(obj.id) or 0
@@ -45,7 +46,7 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
     list_filter = ["job__name", "run_time", "status"]
 
     def run_time_sec(self, obj):
-        return obj.run_time.strftime("%Y-%m-%d %H:%M:%S")
+        return util.localize(obj.run_time)
 
     def get_queryset(self, request):
         return super(DjangoJobExecutionAdmin, self).get_queryset(

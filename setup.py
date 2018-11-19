@@ -11,12 +11,10 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Framework :: Django",
-        "Framework :: Django :: 1.8",
-        "Framework :: Django :: 1.9",
     ],
     keywords='django apscheduler django-apscheduler',
     url='http://github.com/jarekwg/django-apscheduler',
@@ -27,7 +25,7 @@ setup(
         exclude=("tests", )
     ),
     install_requires=[
-        'django>=1.8',
+        'django>=1.11',
         'apscheduler>=3.2.0',
     ],
     zip_safe=False
