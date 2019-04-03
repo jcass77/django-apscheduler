@@ -1,5 +1,32 @@
 import pytest
+import pytz
+from apscheduler.executors.debug import DebugExecutor
+from apscheduler.schedulers.base import BaseScheduler
 from django.conf import settings
+
+from django_apscheduler.jobstores import DjangoJobStore
+
+
+class DebugScheduler(BaseScheduler):
+
+    def shutdown(self, wait=True):
+        pass
+
+    def wakeup(self):
+        self._process_jobs()
+
+
+def job(*args, **kwargs):
+    print("JOB")
+
+
+@pytest.fixture
+def scheduler():
+    scheduler = DebugScheduler(timezone=pytz.timezone("Europe/Moscow"))
+    scheduler.add_jobstore(DjangoJobStore())
+    scheduler.add_executor(DebugExecutor())
+
+    return scheduler
 
 
 @pytest.fixture
