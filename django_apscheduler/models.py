@@ -60,15 +60,15 @@ class DjangoJob(models.Model):
 
 
 class DjangoJobExecutionManager(models.Manager):
-    def delete_old_job_executions(self, max_task_age):
+    def delete_old_job_executions(self, max_age):
         """
         Delete old job executions from the database.
 
-        :param max_task_age: The maximum age (in seconds). Executions that are older
+        :param max_age: The maximum age (in seconds). Executions that are older
         than this will be deleted.
         """
         self.filter(
-            run_time__lte=now() - timedelta(seconds=max_task_age),
+            run_time__lte=now() - timedelta(seconds=max_age),
         ).delete()
 
 
