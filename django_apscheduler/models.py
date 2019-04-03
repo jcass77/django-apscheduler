@@ -1,10 +1,14 @@
 # coding=utf-8
+from datetime import timedelta
+
 from django.db import models, connection
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 import time
 import logging
 
 LOGGER = logging.getLogger("django_apscheduler")
+
 
 class DjangoJobManager(models.Manager):
     """
@@ -55,6 +59,19 @@ class DjangoJob(models.Model):
         ordering = ('next_run_time', )
 
 
+class DjangoJobExecutionManager(models.Manager):
+    def delete_old_job_executions(self, max_age):
+        """
+        Delete old job executions from the database.
+
+        :param max_age: The maximum age (in seconds). Executions that are older
+        than this will be deleted.
+        """
+        self.filter(
+            run_time__lte=now() - timedelta(seconds=max_age),
+        ).delete()
+
+
 class DjangoJobExecution(models.Model):
     ADDED = u"Added"
     SENT = u"Started execution"
@@ -82,6 +99,8 @@ class DjangoJobExecution(models.Model):
 
     exception = models.CharField(max_length=1000, null=True)
     traceback = models.TextField(null=True)
+
+    objects = DjangoJobExecutionManager()
 
     def html_status(self):
         m = {

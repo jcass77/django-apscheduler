@@ -3,46 +3,20 @@ from __future__ import print_function
 import datetime
 import logging
 
-import pytest
 import pytz
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
-from apscheduler.executors.debug import DebugExecutor
-from apscheduler.schedulers.base import BaseScheduler
-from django.db import connection, transaction
 from django.db.backends.utils import CursorWrapper
-from django.db.models.sql.compiler import SQLCompiler
 from django.db.utils import OperationalError
 from pytz import utc
 
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
-from django_apscheduler.models import DjangoJob, DjangoJobExecution, DjangoJobManager
+from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.result_storage import DjangoResultStorage
 from django_apscheduler.util import serialize_dt
 from tests.compat import mock_compat
+from tests.conftest import job
 
 logging.basicConfig()
-
-
-class DebugScheduler(BaseScheduler):
-
-    def shutdown(self, wait=True):
-        pass
-
-    def wakeup(self):
-        self._process_jobs()
-
-
-@pytest.fixture()
-def scheduler():
-    scheduler = DebugScheduler(timezone=pytz.timezone("Europe/Moscow"))
-    scheduler.add_jobstore(DjangoJobStore())
-    scheduler.add_executor(DebugExecutor())
-
-    return scheduler
-
-
-def job(*args, **kwargs):
-    print("JOB")
 
 
 def test_add_job(db, scheduler):
@@ -63,7 +37,6 @@ def test_add_job(db, scheduler):
 
 
 def test_issue_20(db, scheduler):
-    assert isinstance(scheduler, DebugScheduler)
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
     assert DjangoJob.objects.count() == 1
@@ -71,16 +44,13 @@ def test_issue_20(db, scheduler):
     assert DjangoJob.objects.count() == 0
 
 
-@pytest.mark.target
 def test_remove_job(db, scheduler):
     """ This test checks issue https://github.com/jarekwg/django-apscheduler/issues/6 """
 
-    assert isinstance(scheduler, DebugScheduler)
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
 
     assert DjangoJob.objects.count() == 1
-    assert isinstance(scheduler, DebugScheduler)
     assert len(scheduler.get_jobs()) == 1
 
     dbJob = DjangoJob.objects.first()
@@ -95,10 +65,8 @@ def job_for_tests():
 
 job_for_tests.mock = mock_compat.Mock()
 
- 
-def test_try_add_job_then_start(db, scheduler):
-    assert isinstance(scheduler, DebugScheduler)
 
+def test_try_add_job_then_start(db, scheduler):
     scheduler.add_job(job_for_tests, next_run_time=datetime.datetime.now(pytz.timezone("Europe/Moscow")), misfire_grace_time=None)
     scheduler.start()
     scheduler._process_jobs()
@@ -113,10 +81,10 @@ def test_register_job_dec(db, scheduler):
 
     assert DjangoJob.objects.count() == 1
     dbj = DjangoJob.objects.first()
-    assert dbj.name == "tests.test_jobstore.job"
+    assert dbj.name == "tests.conftest.job"
 
     j = scheduler.get_jobs()[0]
-    assert j.id == "tests.test_jobstore.job"
+    assert j.id == "tests.conftest.job"
 
 
 def test_job_events(db, scheduler):
@@ -169,7 +137,7 @@ def test_reconnect_on_db_error(transactional_db):
 
     with mock_compat.patch.object(CursorWrapper, "execute", mocked_execute):
         store = DjangoJobStore()
-        DjangoJob.objects._last_ping = 0
+        # DjangoJob.objects._last_ping = 0
 
         assert store.get_due_jobs(now=datetime.datetime.now()) == []
 

@@ -1,14 +1,14 @@
-appdirs==1.4.3
-APScheduler==3.3.1
-Django==2.0.0
+appdirs~=1.4.3
+APScheduler~=3.3.1
+Django~=2.0.0
 -e git+git@github.com:sallyruthstruik/django-apscheduler.git@9cb356e03c84850734eacadea946ccc6d24c69d2#egg=django_apscheduler
-funcsigs==1.0.2
-futures==3.1.1
-packaging==16.8
-py==1.4.33
-pyparsing==2.2.0
-pytest==3.0.7
-pytest-django==3.1.2
-pytz==2017.2
-six==1.10.0
-tzlocal==1.4
+funcsigs~=1.0.2
+futures~=3.1.1
+packaging~=16.8
+py~=1.4.33
+pyparsing~=2.2.0
+pytest~=3.0.7
+pytest-django~=3.1.2
+pytz~=2017.2
+six~=1.10.0
+tzlocal~=1.4

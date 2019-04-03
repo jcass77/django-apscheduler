@@ -73,6 +73,10 @@ format for displaying runtime timestamps in the Django admin site using ``APSCHE
   It provides the following interface:
   ![](http://dl3.joxi.net/drive/2017/05/19/0003/0636/258684/84/bebc279ecd.png)
 
+*  Old job executions can be deleted with:
+  ```python
+    DjangoJobExecution.objects.delete_old_job_executions(604_800)  # Delete job executions older than 7 days
+  ```
 
 * Register any jobs as you would normally. Note that if you haven't set ``DjangoJobStore`` as the ``'default'`` job store,
   you'll need to include ``jobstore='djangojobstore'`` in your ``scheduler.add_job`` calls.
