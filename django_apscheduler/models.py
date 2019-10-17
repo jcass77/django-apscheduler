@@ -7,6 +7,8 @@ from django.utils.timezone import now
 import time
 import logging
 
+from django_apscheduler import util
+
 LOGGER = logging.getLogger("django_apscheduler")
 
 
@@ -52,7 +54,7 @@ class DjangoJob(models.Model):
     objects = DjangoJobManager()
 
     def __str__(self):
-        status = 'next run at: %s' % self.next_run_time if self.next_run_time else 'paused'
+        status = 'next run at: %s' % util.localize(self.next_run_time) if self.next_run_time else 'paused'
         return '%s (%s)' % (self.name, status)
 
     class Meta:
