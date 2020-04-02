@@ -33,6 +33,8 @@ class DjangoJobAdmin(admin.ModelAdmin):
         return super(DjangoJobAdmin, self).get_queryset(request)
 
     def next_run_time_sec(self, obj):
+        if obj.next_run_time is None:
+            return "(paused)"
         return util.localize(obj.next_run_time)
 
     def average_duration(self, obj):
