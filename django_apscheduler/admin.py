@@ -29,6 +29,8 @@ class DjangoJobAdmin(admin.ModelAdmin):
     # 调度器使用DjangoJobStore()
     scheduler.add_jobstore(DjangoJobStore(), "default")
 
+    list_per_page = 20
+
     def get_queryset(self, request):
         self._durations = {
             item[0]: item[1]
@@ -67,6 +69,8 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
     list_display = ["id", "job_name", "html_status", "run_time_sec", "duration"]
 
     list_filter = ["job__name", "run_time", "status"]
+
+    list_per_page = 20
 
     def run_time_sec(self, obj):
         return util.localize(obj.run_time)

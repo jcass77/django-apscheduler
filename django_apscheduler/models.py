@@ -58,7 +58,7 @@ class DjangoJob(models.Model):
         return '%s (%s)' % (self.name, status)
 
     class Meta:
-        ordering = ('next_run_time', )
+        ordering = ('-id', )
 
 
 class DjangoJobExecutionManager(models.Manager):
