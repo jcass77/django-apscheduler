@@ -222,6 +222,7 @@ def register_events(scheduler, result_storage=None):
 
 
 def register_job(scheduler, *a, **k):
+    # type: (BaseScheduler)->callable
     """
 
     Helper decorator for job registration.
@@ -240,7 +241,6 @@ def register_job(scheduler, *a, **k):
 
     :param a, k: Params, will be passed to scheduler.add_job method. See :func:`BaseScheduler.add_job`
     """
-    # type: (BaseScheduler)->callable
 
     def inner(func):
         k.setdefault("id", "{}.{}".format(func.__module__, func.__name__))
