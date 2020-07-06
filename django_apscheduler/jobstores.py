@@ -9,6 +9,7 @@ from apscheduler.jobstores.base import BaseJobStore, ConflictingIdError, JobLook
 from apscheduler.schedulers.base import BaseScheduler
 
 from django.core.exceptions import ObjectDoesNotExist
+from django import db
 from django.db import connections
 from django.db.utils import OperationalError, ProgrammingError
 
@@ -17,6 +18,7 @@ from django_apscheduler.result_storage import DjangoResultStorage
 from django_apscheduler.util import deserialize_dt, serialize_dt
 
 LOGGER = logging.getLogger("django_apscheduler")
+
 
 def ignore_database_error(on_error_value=None):
 
@@ -35,6 +37,8 @@ def ignore_database_error(on_error_value=None):
                     stacklevel=3
                 )
                 return on_error_value
+            finally:
+                db.connections.close_all()
         return inner
     return dec
 
@@ -194,6 +198,7 @@ class _EventManager(object):
         except Exception as e:
             self.LOGGER.exception(str(e))
 
+    @ignore_database_error()
     def _process_submission_event(self, event):
         # type: (JobSubmissionEvent)->None
 
@@ -205,6 +210,7 @@ class _EventManager(object):
 
         self.storage.get_or_create_job_execution(job, event)
 
+    @ignore_database_error()
     def _process_execution_event(self, event):
         # type: (JobExecutionEvent)->None
 
