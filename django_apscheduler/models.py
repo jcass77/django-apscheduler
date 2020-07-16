@@ -16,6 +16,7 @@ class DjangoJobManager(models.Manager):
     """
     This manager pings database each request after 30s IDLE to prevent MysqlGoneAway error
     """
+
     _last_ping = 0
     _ping_interval = 30
 
@@ -30,7 +31,8 @@ class DjangoJobManager(models.Manager):
         try:
             with connection.cursor() as c:
                 c.execute("SELECT 1")
-        except Exception as e:
+        # TODO: Make this except clause more specific
+        except Exception:
             self.__reconnect()
 
         self._last_ping = time.time()
@@ -54,11 +56,15 @@ class DjangoJob(models.Model):
     objects = DjangoJobManager()
 
     def __str__(self):
-        status = 'next run at: %s' % util.localize(self.next_run_time) if self.next_run_time else 'paused'
-        return '%s (%s)' % (self.name, status)
+        status = (
+            "next run at: %s" % util.localize(self.next_run_time)
+            if self.next_run_time
+            else "paused"
+        )
+        return "%s (%s)" % (self.name, status)
 
     class Meta:
-        ordering = ('next_run_time', )
+        ordering = ("next_run_time",)
 
 
 class DjangoJobExecutionManager(models.Manager):
@@ -69,9 +75,7 @@ class DjangoJobExecutionManager(models.Manager):
         :param max_age: The maximum age (in seconds). Executions that are older
         than this will be deleted.
         """
-        self.filter(
-            run_time__lte=now() - timedelta(seconds=max_age),
-        ).delete()
+        self.filter(run_time__lte=now() - timedelta(seconds=max_age),).delete()
 
 
 class DjangoJobExecution(models.Model):
@@ -85,19 +89,33 @@ class DjangoJobExecution(models.Model):
     SUCCESS = u"Executed"
 
     job = models.ForeignKey(DjangoJob, on_delete=models.CASCADE)
-    status = models.CharField(max_length=50, choices=[
-        [x, x]
-        for x in [ADDED, SENT, MAX_INSTANCES, MISSED, MODIFIED,
-                  REMOVED, ERROR, SUCCESS]
-    ])
+    status = models.CharField(
+        max_length=50,
+        choices=[
+            [x, x]
+            for x in [
+                ADDED,
+                SENT,
+                MAX_INSTANCES,
+                MISSED,
+                MODIFIED,
+                REMOVED,
+                ERROR,
+                SUCCESS,
+            ]
+        ],
+    )
     run_time = models.DateTimeField(db_index=True)
-    duration = models.DecimalField(max_digits=15, decimal_places=2,
-                                   default=None, null=True)
+    duration = models.DecimalField(
+        max_digits=15, decimal_places=2, default=None, null=True
+    )
 
-    started = models.DecimalField(max_digits=15, decimal_places=2,
-                                  default=None, null=True)
-    finished = models.DecimalField(max_digits=15, decimal_places=2,
-                                   default=None, null=True)
+    started = models.DecimalField(
+        max_digits=15, decimal_places=2, default=None, null=True
+    )
+    finished = models.DecimalField(
+        max_digits=15, decimal_places=2, default=None, null=True
+    )
 
     exception = models.CharField(max_length=1000, null=True)
     traceback = models.TextField(null=True)
@@ -113,13 +131,12 @@ class DjangoJobExecution(models.Model):
             self.MODIFIED: "yellow",
             self.REMOVED: "red",
             self.ERROR: "red",
-            self.SUCCESS: "green"
+            self.SUCCESS: "green",
         }
 
-        return mark_safe("<p style=\"color: {}\">{}</p>".format(
-            m[self.status],
-            self.status
-        ))
+        return mark_safe(
+            '<p style="color: {}">{}</p>'.format(m[self.status], self.status)
+        )
 
     def __unicode__(self):
         return "Execution id={}, status={}, job={}".format(
@@ -127,4 +144,4 @@ class DjangoJobExecution(models.Model):
         )
 
     class Meta:
-        ordering = ('-run_time', )
+        ordering = ("-run_time",)

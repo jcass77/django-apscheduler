@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_apscheduler', '0001_initial'),
+        ("django_apscheduler", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='djangojob',
-            name='next_run_time',
+            model_name="djangojob",
+            name="next_run_time",
             field=models.DateTimeField(blank=True, db_index=True, null=True),
         ),
     ]

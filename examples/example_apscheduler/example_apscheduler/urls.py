@@ -17,10 +17,11 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 
-urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-]
-
 import example_apscheduler.jobs  # NOQA @isort:skip
 import logging
+
+urlpatterns = [
+    url(r"^admin/", admin.site.urls),
+]
+
 logging.basicConfig(level="DEBUG")

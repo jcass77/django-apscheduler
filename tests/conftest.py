@@ -8,7 +8,6 @@ from django_apscheduler.jobstores import DjangoJobStore
 
 
 class DebugScheduler(BaseScheduler):
-
     def shutdown(self, wait=True):
         pass
 

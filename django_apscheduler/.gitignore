@@ -1,5 +1,0 @@
-*.pyc
-django_apscheduler.egg-info
-db
-.cache
-.idea
