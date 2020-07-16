@@ -1,7 +1,6 @@
-from __future__ import print_function
-
 import datetime
 import logging
+from unittest import mock
 
 import pytz
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
@@ -13,7 +12,6 @@ from django_apscheduler.jobstores import DjangoJobStore, register_events, regist
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.result_storage import DjangoResultStorage
 from django_apscheduler.util import serialize_dt
-from tests.compat import mock_compat
 from tests.conftest import job
 
 logging.basicConfig()
@@ -65,7 +63,7 @@ def job_for_tests():
     job_for_tests.mock()
 
 
-job_for_tests.mock = mock_compat.Mock()
+job_for_tests.mock = mock.Mock()
 
 
 def test_try_add_job_then_start(db, scheduler):
@@ -122,7 +120,7 @@ def test_issue_15(db):
     DjangoJobExecution.objects.create(job=job, run_time=serialize_dt(srt))
 
     storage.get_or_create_job_execution(
-        job, mock_compat.Mock(scheduled_run_times=[srt])
+        job, mock.Mock(scheduled_run_times=[srt])
     )
 
 
@@ -138,7 +136,7 @@ def test_reconnect_on_db_error(transactional_db):
         else:
             return []
 
-    with mock_compat.patch.object(CursorWrapper, "execute", mocked_execute):
+    with mock.patch.object(CursorWrapper, "execute", mocked_execute):
         store = DjangoJobStore()
         # DjangoJob.objects._last_ping = 0
 

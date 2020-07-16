@@ -32,7 +32,7 @@ class DjangoJobAdmin(admin.ModelAdmin):
             .values_list("job")
             .annotate(duration=Avg("duration"))
         }
-        return super(DjangoJobAdmin, self).get_queryset(request)
+        return super().get_queryset(request)
 
     def next_run_time_sec(self, obj):
         if obj.next_run_time is None:
@@ -54,7 +54,7 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return (
-            super(DjangoJobExecutionAdmin, self)
+            super()
             .get_queryset(request)
             .select_related("job")
         )

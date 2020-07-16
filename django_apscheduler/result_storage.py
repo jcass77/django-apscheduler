@@ -7,13 +7,13 @@ from django_apscheduler.models import DjangoJobExecution, DjangoJob
 from django_apscheduler.util import serialize_dt
 
 
-class DjangoResultStorage(object):
+class DjangoResultStorage:
     """
     Uses Django ORM table for store job status and results.
     You can override this class to change result storage.
     """
 
-    LOGGER = logging.getLogger("django_apscheduler.result_storage")
+    logger = logging.getLogger("django_apscheduler.result_storage")
 
     def get_or_create_job_execution(
         self, job: DjangoJob, event: JobSubmissionEvent
@@ -81,7 +81,7 @@ class DjangoResultStorage(object):
             )
 
         if job_execution.finished:
-            self.LOGGER.warning("Job already finished! %s", job_execution)
+            self.logger.warning("Job already finished! %s", job_execution)
             return
 
         job_execution.finished = time.time()

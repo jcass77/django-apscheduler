@@ -1,4 +1,3 @@
-# coding=utf-8
 from datetime import timedelta
 
 from django.db import models, connection
@@ -9,7 +8,7 @@ import logging
 
 from django_apscheduler import util
 
-LOGGER = logging.getLogger("django_apscheduler")
+logger = logging.getLogger("django_apscheduler")
 
 
 class DjangoJobManager(models.Manager):
@@ -22,7 +21,7 @@ class DjangoJobManager(models.Manager):
 
     def get_queryset(self):
         self.__ping()
-        return super(DjangoJobManager, self).get_queryset()
+        return super().get_queryset()
 
     def __ping(self):
         if time.time() - self._last_ping < self._ping_interval:
@@ -38,13 +37,13 @@ class DjangoJobManager(models.Manager):
         self._last_ping = time.time()
 
     def __reconnect(self):
-        LOGGER.warning("Mysql closed the connection. Perform reconnect...")
+        logger.warning("Mysql closed the connection. Perform reconnect...")
 
         if connection.connection:
             connection.connection.close()
             connection.connection = None
         else:
-            LOGGER.warning("Connection was already closed.")
+            logger.warning("Connection was already closed.")
 
 
 class DjangoJob(models.Model):
@@ -61,7 +60,7 @@ class DjangoJob(models.Model):
             if self.next_run_time
             else "paused"
         )
-        return "%s (%s)" % (self.name, status)
+        return f"{self.name} ({status})"
 
     class Meta:
         ordering = ("next_run_time",)
@@ -79,14 +78,14 @@ class DjangoJobExecutionManager(models.Manager):
 
 
 class DjangoJobExecution(models.Model):
-    ADDED = u"Added"
-    SENT = u"Started execution"
-    MAX_INSTANCES = u"Max instances reached!"
-    MISSED = u"Missed!"
-    MODIFIED = u"Modified!"
-    REMOVED = u"Removed!"
-    ERROR = u"Error!"
-    SUCCESS = u"Executed"
+    ADDED = "Added"
+    SENT = "Started execution"
+    MAX_INSTANCES = "Max instances reached!"
+    MISSED = "Missed!"
+    MODIFIED = "Modified!"
+    REMOVED = "Removed!"
+    ERROR = "Error!"
+    SUCCESS = "Executed"
 
     job = models.ForeignKey(DjangoJob, on_delete=models.CASCADE)
     status = models.CharField(
