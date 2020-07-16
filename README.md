@@ -1,10 +1,5 @@
 Django APScheduler
-================================
-
-** HELP NEEDED WITH MAINTENANCE **
-
-If anyone feels up to helping maintain this package, please PM me and we can get you some privileges.
-
+==================
 
 [![Build status](http://travis-ci.org/jarekwg/django-apscheduler.svg?branch=master)](http://travis-ci.org/jarekwg/django-apscheduler)
 [![codecov](https://codecov.io/gh/jarekwg/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/jarekwg/django-apscheduler)
@@ -13,13 +8,12 @@ If anyone feels up to helping maintain this package, please PM me and we can get
 
 [APScheduler](https://github.com/agronholm/apscheduler) for [Django](https://github.com/django/django).
 
-This little wrapper around APScheduler enables storing persistent jobs in the database using Django's ORM rather than requiring SQLAlchemy or some other bloatware.
+This is a Django app that adds a lightweight wrapper around APScheduler. It enables storing persistent jobs in the database using Django's ORM.
 
-Features in this project:
+Features of this package includes:
 
-* Work on both python2.* and python3+
-* Manage jobs from Django admin interface
-* Monitor your job execution status: duration, exception, traceback, input parameters.
+* Get an overview of the jobs that have been scheduled via the Django admin interface.
+* Monitor job execution and status via the Django admin interface
 
 Installation
 ------------
@@ -28,82 +22,74 @@ Installation
 pip install django-apscheduler
 ```
 
-Usage
------
+Quick start
+-----------
 
-* Add ``django_apscheduler`` to ``INSTALLED_APPS`` in your Django project settings, You can also specify a different
-format for displaying runtime timestamps in the Django admin site using ``APSCHEDULER_DATETIME_FORMAT``:
-  ```python
-
+* Add ``django_apscheduler`` to your ``INSTALLED_APPS`` setting like this:
+```python
   INSTALLED_APPS = (
     ...
     "django_apscheduler",
   )
+```
 
+* You can also specify a different format for displaying runtime timestamps in the Django admin site using ``APSCHEDULER_DATETIME_FORMAT``:
+```python
   APSCHEDULER_DATETIME_FORMAT =  "N j, Y, f:s a"  # Default
+```
 
-  ```
+* Run `python manage.py migrate` to create the django_apscheduler models.
 
-* Run migrations:
-  ```python
-  ./manage.py migrate
-  ```
 * Instantiate a new scheduler as you would with APScheduler. For example:
-  ```python
+```python
   from apscheduler.schedulers.background import BackgroundScheduler
 
   scheduler = BackgroundScheduler()
-  ```
-* Instruct the scheduler to use ``DjangoJobStore``:
-  ```python
+```
 
+* Instruct the scheduler to use `DjangoJobStore`:
+```python
   from django_apscheduler.jobstores import DjangoJobStore
 
-  # If you want all scheduled jobs to use this store by default,
-  # use the name 'default' instead of 'djangojobstore'.
+  # If you want all scheduled jobs to use this store by default, # use the name 'default' instead of 'djangojobstore'.
   scheduler.add_jobstore(DjangoJobStore(), 'djangojobstore')
-  ```
+```
 
-* If you want per-execution monitoring, call register_events on your scheduler:
-  ```python
-
+* If you want per-execution monitoring, call `register_events` on your scheduler:
+```python
     from django_apscheduler.jobstores import register_events
     register_events(scheduler)
-  ```
-
-  It provides the following interface:
-  ![](http://dl3.joxi.net/drive/2017/05/19/0003/0636/258684/84/bebc279ecd.png)
+```
 
 *  Old job executions can be deleted with:
-  ```python
+```python
     DjangoJobExecution.objects.delete_old_job_executions(604_800)  # Delete job executions older than 7 days
-  ```
+```
 
-* Register any jobs as you would normally. Note that if you haven't set ``DjangoJobStore`` as the ``'default'`` job store,
-  you'll need to include ``jobstore='djangojobstore'`` in your ``scheduler.add_job`` calls.
+* Register any jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'` job store,
+  then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-* **Don't forget to give each job a unique id. For example:**
-  ```python
-
+* **Don't forget to give each job a unique id using the `id` parameter. For example:**
+```python
   @scheduler.scheduled_job("interval", seconds=60, id="job")
   def job():
-    ...
-  ```
-  or use custom decorator for job registration. It will give id automatically:
-  ```python
+    pass
+```
+or use the custom `register_job` decorator for job registration. This will assign a unique id automatically:
+```python
   from django_apscheduler.jobstores import register_job
 
   @register_job("interval", seconds=60)
   def job():
-    ...
-  ```
+    pass
+```
 
 * Start the scheduler:
-  ```python
+```python
   scheduler.start()
-  ```
+```
 
-A full example project can be found in the example dir. Code snippet:
+A full example project can be found in the 'examples' folder. Code snippet:
 ```python
 import time
 
@@ -123,5 +109,4 @@ register_events(scheduler)
 
 scheduler.start()
 print("Scheduler started!")
-
 ```
