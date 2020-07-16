@@ -10,6 +10,7 @@ from django_apscheduler.util import serialize_dt
 class DjangoResultStorage:
     """
     Uses Django ORM table for store job status and results.
+
     You can override this class to change result storage.
     """
 
@@ -20,6 +21,7 @@ class DjangoResultStorage:
     ) -> int:
         """
         Create and return new job execution item.
+
         :param job: DjangoJob instance
         :type job: django_apscheduler.models.DjangoJob
         :param event: JobSubmissionEvent instance
@@ -54,11 +56,10 @@ class DjangoResultStorage:
             run_time=serialize_dt(event.scheduled_run_times[0]),
         ).id
 
-    def register_job_executed(
-        self, job: DjangoJobExecution, event: JobExecutionEvent
-    ) -> int:
+    def register_job_executed(self, job: DjangoJobExecution, event: JobExecutionEvent):
         """
-        Registration of job execution status
+        Registration of job execution status.
+
         :param job: DjangoJob instance
         :param event: JobExecutionEvent instance
         :return: JobExecution id
@@ -71,7 +72,7 @@ class DjangoResultStorage:
             )
             .order_by("id")
             .last()
-        )  # type: DjangoJobExecution
+        )
 
         if not job_execution:
             job_execution = DjangoJobExecution.objects.create(

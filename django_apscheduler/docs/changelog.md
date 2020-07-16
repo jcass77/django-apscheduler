@@ -14,6 +14,10 @@ This changelog is used to track all major changes to django_apscheduler.
 - Clean up unused dependencies / update dependencies to latest available versions.
 - Switch to Black code formatting.
 - Align package layout with official [Django recommendations](https://docs.djangoproject.com/en/dev/intro/reusable-apps/#packaging-your-app)
+- Move UI-related DjangoJobExecution.html_status out of model definition and in to the associated model admin definition.
+- Add `help_text` to model fields to document their use.
+- Remove unused code fragments.
+- Add Python type annotations.
 
 **Fixes**
 
