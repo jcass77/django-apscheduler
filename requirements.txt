@@ -1,4 +1,0 @@
-# apscheduler==3.2.0
-
-# Waiting on https://github.com/agronholm/apscheduler/pull/149
--e git+https://github.com/jarekwg/apscheduler.git@e2f780ceffd86bce0c6732d861e73eb86a68a0e6#egg=apscheduler
