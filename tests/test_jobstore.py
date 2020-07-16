@@ -31,7 +31,9 @@ def test_add_job(db, scheduler):
     assert DjangoJob.objects.count() == 1
 
     # add job second time
-    scheduler.add_job(job, trigger="interval", seconds=1, id="job", replace_existing=True)
+    scheduler.add_job(
+        job, trigger="interval", seconds=1, id="job", replace_existing=True
+    )
 
     assert DjangoJob.objects.count() == 1
 
@@ -67,7 +69,11 @@ job_for_tests.mock = mock_compat.Mock()
 
 
 def test_try_add_job_then_start(db, scheduler):
-    scheduler.add_job(job_for_tests, next_run_time=datetime.datetime.now(pytz.timezone("Europe/Moscow")), misfire_grace_time=None)
+    scheduler.add_job(
+        job_for_tests,
+        next_run_time=datetime.datetime.now(pytz.timezone("Europe/Moscow")),
+        misfire_grace_time=None,
+    )
     scheduler.start()
     scheduler._process_jobs()
     assert job_for_tests.mock.call_count == 1
@@ -113,20 +119,17 @@ def test_issue_15(db):
     srt = datetime.datetime.now()
 
     job = DjangoJob.objects.create(name="test", next_run_time=datetime.datetime.now())
-    DjangoJobExecution.objects.create(
-        job=job,
-        run_time=serialize_dt(srt)
-    )
+    DjangoJobExecution.objects.create(job=job, run_time=serialize_dt(srt))
 
     storage.get_or_create_job_execution(
-        job,
-        mock_compat.Mock(scheduled_run_times=[srt])
+        job, mock_compat.Mock(scheduled_run_times=[srt])
     )
 
 
 def test_reconnect_on_db_error(transactional_db):
 
     counter = [0]
+
     def mocked_execute(self, *a, **k):
         counter[0] += 1
 
@@ -140,4 +143,3 @@ def test_reconnect_on_db_error(transactional_db):
         # DjangoJob.objects._last_ping = 0
 
         assert store.get_due_jobs(now=datetime.datetime.now()) == []
-

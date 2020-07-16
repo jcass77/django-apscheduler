@@ -10,6 +10,6 @@ install:
   - pip install tox-travis codecov
 
 script:
-  - tox -e django-lts, django-latest
+  - tox -e django-lts, django-latest, black, flake8
 
 after_success: codecov

@@ -27,8 +27,10 @@ class DjangoJobAdmin(admin.ModelAdmin):
             item[0]: item[1]
             for item in DjangoJobExecution.objects.filter(
                 status=DjangoJobExecution.SUCCESS,
-                run_time__gte=now() - datetime.timedelta(days=2)
-            ).values_list("job").annotate(duration=Avg("duration"))
+                run_time__gte=now() - datetime.timedelta(days=2),
+            )
+            .values_list("job")
+            .annotate(duration=Avg("duration"))
         }
         return super(DjangoJobAdmin, self).get_queryset(request)
 
@@ -51,6 +53,8 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
         return util.localize(obj.run_time)
 
     def get_queryset(self, request):
-        return super(DjangoJobExecutionAdmin, self).get_queryset(
-            request
-        ).select_related("job")
+        return (
+            super(DjangoJobExecutionAdmin, self)
+            .get_queryset(request)
+            .select_related("job")
+        )

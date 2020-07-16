@@ -21,7 +21,9 @@ def deserialize_dt(dt):
 
 
 def get_format():
-    return formats.get_format(getattr(settings, "APSCHEDULER_DATETIME_FORMAT", "N j, Y, f:s a"))
+    return formats.get_format(
+        getattr(settings, "APSCHEDULER_DATETIME_FORMAT", "N j, Y, f:s a")
+    )
 
 
 def localize(dt):

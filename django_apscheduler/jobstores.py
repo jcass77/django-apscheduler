@@ -5,7 +5,7 @@ import warnings
 from apscheduler import events
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from apscheduler.job import Job
-from apscheduler.jobstores.base import BaseJobStore, ConflictingIdError, JobLookupError
+from apscheduler.jobstores.base import BaseJobStore, JobLookupError
 from apscheduler.schedulers.base import BaseScheduler
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -21,7 +21,6 @@ LOGGER = logging.getLogger("django_apscheduler")
 
 
 def ignore_database_error(on_error_value=None):
-
     def dec(func):
         from functools import wraps
 
@@ -32,14 +31,18 @@ def ignore_database_error(on_error_value=None):
             except (OperationalError, ProgrammingError) as e:
                 warnings.warn(
                     "Got OperationalError: {}. "
-                    "Please, check that you have migrated the database via python manage.py migrate".format(e),
+                    "Please, check that you have migrated the database via python manage.py migrate".format(
+                        e
+                    ),
                     category=RuntimeWarning,
-                    stacklevel=3
+                    stacklevel=3,
                 )
                 return on_error_value
             finally:
                 db.connections.close_all()
+
         return inner
+
     return dec
 
 
@@ -72,17 +75,23 @@ class DjangoJobStore(BaseJobStore):
             out = self._get_jobs(next_run_time__lte=serialize_dt(now))
             LOGGER.debug("Got %s", out)
             return out
-        except:
+        # TODO: Make this except clause more specific
+        except Exception:
             LOGGER.exception("Exception during getting jobs")
             return []
 
     @ignore_database_error()
     def get_next_run_time(self):
         try:
-            return deserialize_dt(DjangoJob.objects.filter(next_run_time__isnull=False).earliest('next_run_time').next_run_time)
+            return deserialize_dt(
+                DjangoJob.objects.filter(next_run_time__isnull=False)
+                .earliest("next_run_time")
+                .next_run_time
+            )
         except ObjectDoesNotExist:  # no active jobs
             return
-        except:
+        # TODO: Make this except clause more specific
+        except Exception:
             LOGGER.exception("Exception during get_next_run_time for jobs")
 
     @ignore_database_error(on_error_value=[])
@@ -96,30 +105,31 @@ class DjangoJobStore(BaseJobStore):
         dbJob, created = DjangoJob.objects.get_or_create(
             defaults=dict(
                 next_run_time=serialize_dt(job.next_run_time),
-                job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol)
+                job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
             ),
             name=job.id,
         )
 
         if not created:
-            LOGGER.warning("Job with id %s already in jobstore. I'll refresh it", job.id)
+            LOGGER.warning(
+                "Job with id %s already in jobstore. I'll refresh it", job.id
+            )
             dbJob.next_run_time = serialize_dt(job.next_run_time)
-            dbJob.job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol)
+            dbJob.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
             dbJob.save()
 
     @ignore_database_error()
     def update_job(self, job):
         updated = DjangoJob.objects.filter(name=job.id).update(
             next_run_time=serialize_dt(job.next_run_time),
-            job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol)
+            job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
         )
 
         LOGGER.debug(
             "Update job %s: next_run_time=%s, job_state=%s",
             job,
             serialize_dt(job.next_run_time),
-            job.__getstate__()
-
+            job.__getstate__(),
         )
 
         if updated == 0:
@@ -136,14 +146,16 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def remove_all_jobs(self):
         with connections["default"].cursor() as c:
-            c.execute("""
+            c.execute(
+                """
                 DELETE FROM django_apscheduler_djangojobexecution;
-            """)
+            """
+            )
             c.execute("DELETE FROM django_apscheduler_djangojob;")
 
     def _reconstitute_job(self, job_state):
         job_state = pickle.loads(job_state)
-        job_state['jobstore'] = self
+        job_state["jobstore"] = self
         job = Job.__new__(Job)
         job.__setstate__(job_state)
         job._scheduler = self._scheduler
@@ -151,14 +163,17 @@ class DjangoJobStore(BaseJobStore):
         return job
 
     def _get_jobs(self, **filters):
-        job_states = DjangoJob.objects.filter(**filters).values_list('id', 'job_state')
+        job_states = DjangoJob.objects.filter(**filters).values_list("id", "job_state")
         jobs = []
         failed_job_ids = set()
         for job_id, job_state in job_states:
             try:
                 jobs.append(self._reconstitute_job(job_state))
-            except:
-                self._logger.exception('Unable to restore job "%s" -- removing it', job_id)
+            # TODO: Make this except clause more specific
+            except Exception:
+                self._logger.exception(
+                    'Unable to restore job "%s" -- removing it', job_id
+                )
                 failed_job_ids.add(job_id)
 
         # Remove all the jobs we failed to restore
@@ -187,8 +202,7 @@ class _EventManager(object):
         self.storage = storage or DjangoResultStorage()
 
     def __call__(self, event):
-        LOGGER.debug("Got event: %s, %s, %s",
-                      event, type(event), event.__dict__)
+        LOGGER.debug("Got event: %s, %s, %s", event, type(event), event.__dict__)
         # print event, type(event), event.__dict__
         try:
             if isinstance(event, JobSubmissionEvent):

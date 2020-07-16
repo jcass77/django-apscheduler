@@ -1,1 +1,1 @@
-default_app_config = 'django_apscheduler.apps.DjangoApschedulerConfig'
+default_app_config = "django_apscheduler.apps.DjangoApschedulerConfig"

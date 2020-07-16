@@ -24,7 +24,9 @@ def test_delete_old_job_executions(db, scheduler):
     scheduler._dispatch_event(JobExecutionEvent(4096, "job_1", None, one_second_ago))
     scheduler._dispatch_event(JobExecutionEvent(4096, "job_2", None, now))
 
-    scheduler._dispatch_event(JobSubmissionEvent(32768, "job_1", None, [one_second_ago]))
+    scheduler._dispatch_event(
+        JobSubmissionEvent(32768, "job_1", None, [one_second_ago])
+    )
     scheduler._dispatch_event(JobSubmissionEvent(32768, "job_2", None, [now]))
 
     assert DjangoJobExecution.objects.count() == 2
