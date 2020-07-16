@@ -1,17 +1,20 @@
-# coding=utf-8
 from datetime import timedelta
 
 from django.db import models, connection
-from django.utils.safestring import mark_safe
-from django.utils.timezone import now
+from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
+
 import time
 import logging
 
 from django_apscheduler import util
 
-LOGGER = logging.getLogger("django_apscheduler")
+logger = logging.getLogger("django_apscheduler")
 
 
+# TODO: Remove this workaround?
+# The canonical approach seems to be to close connections instead if we know that they will be idle for a long
+# period of time - see: https://code.djangoproject.com/ticket/21597#comment:29
 class DjangoJobManager(models.Manager):
     """
     This manager pings database each request after 30s IDLE to prevent MysqlGoneAway error
@@ -22,7 +25,7 @@ class DjangoJobManager(models.Manager):
 
     def get_queryset(self):
         self.__ping()
-        return super(DjangoJobManager, self).get_queryset()
+        return super().get_queryset()
 
     def __ping(self):
         if time.time() - self._last_ping < self._ping_interval:
@@ -38,59 +41,76 @@ class DjangoJobManager(models.Manager):
         self._last_ping = time.time()
 
     def __reconnect(self):
-        LOGGER.warning("Mysql closed the connection. Perform reconnect...")
+        logger.warning("Mysql closed the connection. Perform reconnect...")
 
         if connection.connection:
             connection.connection.close()
             connection.connection = None
         else:
-            LOGGER.warning("Connection was already closed.")
+            logger.warning("Connection was already closed.")
 
 
 class DjangoJob(models.Model):
-    name = models.CharField(max_length=255, unique=True)  # id of job
-    next_run_time = models.DateTimeField(db_index=True, blank=True, null=True)
-    # Perhaps consider using PickleField down the track.
+    name = models.CharField(
+        max_length=255, unique=True, help_text=_("Unique name for this job.")
+    )
+
+    next_run_time = models.DateTimeField(
+        db_index=True,
+        blank=True,
+        null=True,
+        help_text=_(
+            "Date and time at which this job is scheduled to be executed next."
+        ),
+    )
+
+    # TODO: Consider using PickleField instead.
     job_state = models.BinaryField()
 
     objects = DjangoJobManager()
 
     def __str__(self):
         status = (
-            "next run at: %s" % util.localize(self.next_run_time)
+            f"next run at: {util.localize(self.next_run_time)}"
             if self.next_run_time
             else "paused"
         )
-        return "%s (%s)" % (self.name, status)
+        return f"{self.name} ({status})"
 
     class Meta:
         ordering = ("next_run_time",)
 
 
 class DjangoJobExecutionManager(models.Manager):
-    def delete_old_job_executions(self, max_age):
+    def delete_old_job_executions(self, max_age: int):
         """
         Delete old job executions from the database.
 
         :param max_age: The maximum age (in seconds). Executions that are older
         than this will be deleted.
         """
-        self.filter(run_time__lte=now() - timedelta(seconds=max_age),).delete()
+        self.filter(run_time__lte=timezone.now() - timedelta(seconds=max_age),).delete()
 
 
 class DjangoJobExecution(models.Model):
-    ADDED = u"Added"
-    SENT = u"Started execution"
-    MAX_INSTANCES = u"Max instances reached!"
-    MISSED = u"Missed!"
-    MODIFIED = u"Modified!"
-    REMOVED = u"Removed!"
-    ERROR = u"Error!"
-    SUCCESS = u"Executed"
+    ADDED = "Added"
+    SENT = "Started execution"
+    MAX_INSTANCES = "Max instances reached!"
+    MISSED = "Missed!"
+    MODIFIED = "Modified!"
+    REMOVED = "Removed!"
+    ERROR = "Error!"
+    SUCCESS = "Executed"
 
-    job = models.ForeignKey(DjangoJob, on_delete=models.CASCADE)
+    job = models.ForeignKey(
+        DjangoJob,
+        on_delete=models.CASCADE,
+        help_text=_("The job that this execution relates to."),
+    )
     status = models.CharField(
         max_length=50,
+        # TODO: Replace this with enumeration types when we drop support for Django 2.2
+        # See: https://docs.djangoproject.com/en/dev/ref/models/fields/#field-choices-enum-types
         choices=[
             [x, x]
             for x in [
@@ -104,44 +124,55 @@ class DjangoJobExecution(models.Model):
                 SUCCESS,
             ]
         ],
+        help_text=_("The current status of this job execution."),
     )
-    run_time = models.DateTimeField(db_index=True)
+    run_time = models.DateTimeField(
+        db_index=True, help_text=_("Date and time at which this job was executed."),
+    )
+
     duration = models.DecimalField(
-        max_digits=15, decimal_places=2, default=None, null=True
+        max_digits=15,
+        decimal_places=2,
+        default=None,
+        null=True,
+        help_text=_("Total run time of this job (in seconds)."),
     )
 
     started = models.DecimalField(
-        max_digits=15, decimal_places=2, default=None, null=True
-    )
-    finished = models.DecimalField(
-        max_digits=15, decimal_places=2, default=None, null=True
+        max_digits=15,
+        decimal_places=2,
+        default=None,
+        null=True,
+        help_text=_("Timestamp at which this job was started."),
     )
 
-    exception = models.CharField(max_length=1000, null=True)
-    traceback = models.TextField(null=True)
+    finished = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=None,
+        null=True,
+        help_text=_("Timestamp at which this job was finished."),
+    )
+
+    exception = models.CharField(
+        max_length=1000,
+        null=True,
+        help_text=_(
+            "Details of exception that occurred during job execution (if any)."
+        ),
+    )
+
+    traceback = models.TextField(
+        null=True,
+        help_text=_(
+            "Traceback of exception that occurred during job execution (if any)."
+        ),
+    )
 
     objects = DjangoJobExecutionManager()
 
-    def html_status(self):
-        m = {
-            self.ADDED: "RoyalBlue",
-            self.SENT: "SkyBlue",
-            self.MAX_INSTANCES: "yellow",
-            self.MISSED: "yellow",
-            self.MODIFIED: "yellow",
-            self.REMOVED: "red",
-            self.ERROR: "red",
-            self.SUCCESS: "green",
-        }
-
-        return mark_safe(
-            '<p style="color: {}">{}</p>'.format(m[self.status], self.status)
-        )
-
     def __unicode__(self):
-        return "Execution id={}, status={}, job={}".format(
-            self.id, self.status, self.job
-        )
+        return f"Execution id={self.id}, status={self.status}, job={self.job}"
 
     class Meta:
         ordering = ("-run_time",)

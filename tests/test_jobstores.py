@@ -1,7 +1,6 @@
-from __future__ import print_function
-
 import datetime
 import logging
+from unittest import mock
 
 import pytz
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
@@ -13,24 +12,19 @@ from django_apscheduler.jobstores import DjangoJobStore, register_events, regist
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.result_storage import DjangoResultStorage
 from django_apscheduler.util import serialize_dt
-from tests.compat import mock_compat
 from tests.conftest import job
 
 logging.basicConfig()
 
 
 def test_add_job(db, scheduler):
-    """
-    :type scheduler: DebugScheduler
-    """
-
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
 
     scheduler.start()
 
     assert DjangoJob.objects.count() == 1
 
-    # add job second time
+    # Add job second time
     scheduler.add_job(
         job, trigger="interval", seconds=1, id="job", replace_existing=True
     )
@@ -41,8 +35,11 @@ def test_add_job(db, scheduler):
 def test_issue_20(db, scheduler):
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
+
     assert DjangoJob.objects.count() == 1
+
     scheduler.remove_job("job")
+
     assert DjangoJob.objects.count() == 0
 
 
@@ -65,7 +62,7 @@ def job_for_tests():
     job_for_tests.mock()
 
 
-job_for_tests.mock = mock_compat.Mock()
+job_for_tests.mock = mock.Mock()
 
 
 def test_try_add_job_then_start(db, scheduler):
@@ -76,20 +73,23 @@ def test_try_add_job_then_start(db, scheduler):
     )
     scheduler.start()
     scheduler._process_jobs()
+
     assert job_for_tests.mock.call_count == 1
 
 
 def test_register_job_dec(db, scheduler):
-
     register_job(scheduler, "interval", seconds=1)(job)
 
     scheduler.start()
 
     assert DjangoJob.objects.count() == 1
+
     dbj = DjangoJob.objects.first()
+
     assert dbj.name == "tests.conftest.job"
 
     j = scheduler.get_jobs()[0]
+
     assert j.id == "tests.conftest.job"
 
 
@@ -113,7 +113,6 @@ def test_issue_15(db):
     """
     This test covers bug from https://github.com/jarekwg/django-apscheduler/issues/15
     """
-
     storage = DjangoResultStorage()
 
     srt = datetime.datetime.now()
@@ -121,13 +120,10 @@ def test_issue_15(db):
     job = DjangoJob.objects.create(name="test", next_run_time=datetime.datetime.now())
     DjangoJobExecution.objects.create(job=job, run_time=serialize_dt(srt))
 
-    storage.get_or_create_job_execution(
-        job, mock_compat.Mock(scheduled_run_times=[srt])
-    )
+    storage.get_or_create_job_execution(job, mock.Mock(scheduled_run_times=[srt]))
 
 
 def test_reconnect_on_db_error(transactional_db):
-
     counter = [0]
 
     def mocked_execute(self, *a, **k):
@@ -138,7 +134,7 @@ def test_reconnect_on_db_error(transactional_db):
         else:
             return []
 
-    with mock_compat.patch.object(CursorWrapper, "execute", mocked_execute):
+    with mock.patch.object(CursorWrapper, "execute", mocked_execute):
         store = DjangoJobStore()
         # DjangoJob.objects._last_ping = 0
 
