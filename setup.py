@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='django-apscheduler',
-    version='0.3.1',
+    version='0.4.0',
     description='APScheduler for Django',
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -10,9 +10,9 @@ setup(
         "Framework :: Django",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Framework :: Django",
     ],
@@ -25,8 +25,8 @@ setup(
         exclude=("tests", )
     ),
     install_requires=[
-        'django>=1.11',
-        'apscheduler>=3.2.0',
+        'django>=2.2',
+        'apscheduler>=3.2',
     ],
     zip_safe=False
 )

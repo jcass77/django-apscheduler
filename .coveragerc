@@ -1,0 +1,5 @@
+[run]
+include = django_apscheduler/*
+omit = *migrations*, *tests*
+plugins =
+    django_coverage_plugin
