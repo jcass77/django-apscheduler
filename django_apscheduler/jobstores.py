@@ -9,6 +9,7 @@ from apscheduler.jobstores.base import BaseJobStore, JobLookupError
 from apscheduler.schedulers.base import BaseScheduler
 
 from django import db
+from django.db import transaction
 from django.db.utils import OperationalError, ProgrammingError
 
 from django_apscheduler.models import DjangoJob
@@ -109,21 +110,34 @@ class DjangoJobStore(BaseJobStore):
             logger.warning(
                 f"Job with id '{job.id}' already in jobstore! Refreshing it..."
             )
-            db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
-            db_job.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
-            db_job.save()
+            # Acquire lock for update
+            with transaction.atomic():
+                db_job = DjangoJob.objects.select_for_update(of=("self",)).get(
+                    id=db_job.id
+                )
+
+                db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
+                db_job.job_state = pickle.dumps(
+                    job.__getstate__(), self.pickle_protocol
+                )
+                db_job.save()
 
     @ignore_database_error()
     def update_job(self, job: AppSchedulerJob):
-        try:
-            db_job = DjangoJob.objects.get(id=job.id)
-            db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
-            db_job.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
+        # Acquire lock for update
+        with transaction.atomic():
+            try:
+                db_job = DjangoJob.objects.select_for_update(of=("self")).get(id=job.id)
 
-            db_job.save()
+                db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
+                db_job.job_state = pickle.dumps(
+                    job.__getstate__(), self.pickle_protocol
+                )
 
-        except DjangoJob.DoesNotExist:
-            raise JobLookupError(job.id)
+                db_job.save()
+
+            except DjangoJob.DoesNotExist:
+                raise JobLookupError(job.id)
 
     @ignore_database_error()
     def remove_job(self, job_id: str):
@@ -134,7 +148,7 @@ class DjangoJobStore(BaseJobStore):
 
     @ignore_database_error()
     def remove_all_jobs(self):
-        DjangoJob.all().delete()
+        DjangoJob.all().delete()  # Implicit: will also delete all DjangoJobExecutions due to on_delete=models.CASCADE
 
     def _reconstitute_job(self, job_state):
         job_state = pickle.loads(job_state)

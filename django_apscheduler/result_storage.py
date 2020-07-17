@@ -2,6 +2,7 @@ import logging
 import time
 
 from apscheduler.events import JobSubmissionEvent, JobExecutionEvent
+from django.db import transaction
 
 from django_apscheduler.models import DjangoJobExecution, DjangoJob
 from django_apscheduler.util import uct_datetime_to_datetime
@@ -37,25 +38,35 @@ class DjangoResultStorage:
             .first()
         )
 
-        if job_execution and job_execution.started is None:
-            job_execution.started = time.time()
-            try:
-                job_execution.duration = float(job_execution.finished) - float(
-                    job_execution.started
-                )
-            except TypeError:
-                # Job is still running - ok.
-                job_execution.duration = None
+        if job_execution:
+            # TODO: Calling get_or_create_job_execution does not seem like a valid basis for setting 'started'?
+            if job_execution.started is None:
+                # Acquire lock for update
+                with transaction.atomic():
+                    job_execution = DjangoJobExecution.objects.select_for_update(
+                        of=("self",)
+                    ).get(id=job_execution.id)
 
-            job_execution.save()
-            return job_execution.id
+                    job_execution.started = time.time()
+                    try:
+                        job_execution.duration = float(job_execution.finished) - float(
+                            job_execution.started
+                        )
+                    except TypeError:
+                        # Job is still running - ok.
+                        job_execution.duration = None
 
-        return DjangoJobExecution.objects.create(
-            job_id=job.id,
-            status=DjangoJobExecution.SENT,
-            started=time.time(),
-            run_time=uct_datetime_to_datetime(event.scheduled_run_times[0]),
-        ).id
+                    job_execution.save()
+
+        else:
+            job_execution = DjangoJobExecution.objects.create(
+                job_id=job.id,
+                status=DjangoJobExecution.SENT,
+                started=time.time(),
+                run_time=uct_datetime_to_datetime(event.scheduled_run_times[0]),
+            )
+
+        return job_execution.id
 
     def register_job_executed(self, job: DjangoJob, event: JobExecutionEvent):
         """
@@ -86,22 +97,28 @@ class DjangoResultStorage:
             self.logger.warning(f"Job already finished: {job_execution}.")
             return
 
-        job_execution.finished = time.time()
+        # Acquire lock for update
+        with transaction.atomic():
+            job_execution = DjangoJobExecution.objects.select_for_update(
+                of=("self",)
+            ).get(id=job_execution.id)
 
-        try:
-            job_execution.duration = float(job_execution.finished) - float(
-                job_execution.started
-            )
-        except TypeError:
-            # TODO: Fix setting of `DjangoJob.started`
-            # Job was never started?. This should probably be an error condition!
-            job_execution.duration = None
+            job_execution.finished = time.time()
 
-        if event.exception:
-            job_execution.exception = str(event.exception)
-            job_execution.traceback = str(event.traceback)
-            job_execution.status = DjangoJobExecution.ERROR
-        else:
-            job_execution.status = DjangoJobExecution.SUCCESS
+            try:
+                job_execution.duration = float(job_execution.finished) - float(
+                    job_execution.started
+                )
+            except TypeError:
+                # TODO: Fix setting of `DjangoJob.started`
+                # Job was never started?. This should probably be an error condition!
+                job_execution.duration = None
 
-        job_execution.save()
+            if event.exception:
+                job_execution.exception = str(event.exception)
+                job_execution.traceback = str(event.traceback)
+                job_execution.status = DjangoJobExecution.ERROR
+            else:
+                job_execution.status = DjangoJobExecution.SUCCESS
+
+            job_execution.save()

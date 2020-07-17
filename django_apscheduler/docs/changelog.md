@@ -21,6 +21,8 @@ This changelog is used to track all major changes to django_apscheduler.
 - Implement various Django best practices for QuerySet management and model instance creation / updates.
 - Drop `DjangoJob.name` field in favor of aligning with using APScheduler's `id` field. NOTE: please run your Django
   migrations again - might take a while depending on the number of `DjangoJobExecutions` in your database.
+- Acquire a DB lock when updating `DjangoJob` or `DjangoJobExecution` instances. This should be safer for multi-threaded
+  usage.
 
 **Fixes**
 
