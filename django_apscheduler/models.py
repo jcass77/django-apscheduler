@@ -99,6 +99,10 @@ class DjangoJobExecution(models.Model):
 
     STATUS_CHOICES = [(x, x) for x in [SENT, ERROR, SUCCESS,]]
 
+    id = models.BigAutoField(
+        primary_key=True, help_text=_("Unique ID for this job execution.")
+    )
+
     job = models.ForeignKey(
         DjangoJob,
         on_delete=models.CASCADE,

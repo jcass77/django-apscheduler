@@ -23,6 +23,8 @@ This changelog is used to track all major changes to django_apscheduler.
   migrations again - might take a while depending on the number of `DjangoJobExecutions` in your database.
 - Acquire a DB lock when updating `DjangoJob` or `DjangoJobExecution` instances. This should be safer for multi-threaded
   usage.
+- Switch to using `BigAutoField` for `DjangoJobExecution`'s primary keys. This should prevent running out of usable
+  ID's for deployments with a very large number of job executions in the database (Resolves [#36](https://github.com/jarekwg/django-apscheduler/issues/36)). 
 
 **Fixes**
 
