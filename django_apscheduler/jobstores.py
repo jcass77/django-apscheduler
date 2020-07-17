@@ -60,7 +60,7 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def lookup_job(self, job_id: str) -> Union[None, AppSchedulerJob]:
         try:
-            job_state = DjangoJob.objects.get(name=job_id).job_state
+            job_state = DjangoJob.objects.get(id=job_id).job_state
             return self._reconstitute_job(job_state) if job_state else None
 
         except DjangoJob.DoesNotExist:
@@ -98,7 +98,7 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def add_job(self, job: AppSchedulerJob):
         db_job, created = DjangoJob.objects.get_or_create(
-            name=job.id,
+            id=job.id,
             defaults=dict(
                 next_run_time=uct_datetime_to_datetime(job.next_run_time),
                 job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
@@ -107,7 +107,7 @@ class DjangoJobStore(BaseJobStore):
 
         if not created:
             logger.warning(
-                f"Job with id '{job.name}' already in jobstore! Refreshing it..."
+                f"Job with id '{job.id}' already in jobstore! Refreshing it..."
             )
             db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
             db_job.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
@@ -116,7 +116,7 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def update_job(self, job: AppSchedulerJob):
         try:
-            db_job = DjangoJob.objects.get(name=job.id)
+            db_job = DjangoJob.objects.get(id=job.id)
             db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
             db_job.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
 
@@ -128,7 +128,7 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def remove_job(self, job_id: str):
         try:
-            DjangoJob.objects.get(name=job_id).delete()
+            DjangoJob.objects.get(id=job_id).delete()
         except DjangoJob.DoesNotExist:
             raise JobLookupError(job_id)
 
@@ -195,7 +195,7 @@ class _EventManager:
     @ignore_database_error()
     def _process_submission_event(self, event: JobSubmissionEvent):
         try:
-            job = DjangoJob.objects.get(name=event.job_id)
+            job = DjangoJob.objects.get(id=event.job_id)
         except DjangoJob.DoesNotExist:
             self.logger.warning(f"Job with id '{event.job_id}' not found in database!")
             return
@@ -206,7 +206,7 @@ class _EventManager:
     def _process_execution_event(self, event: JobExecutionEvent):
 
         try:
-            job = DjangoJob.objects.get(name=event.job_id)
+            job = DjangoJob.objects.get(id=event.job_id)
         except DjangoJob.DoesNotExist:
             self.logger.warning(f"Job with id '{event.job_id}' not found in database")
             return

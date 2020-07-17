@@ -8,8 +8,8 @@ from django_apscheduler import util
 
 @admin.register(DjangoJob)
 class DjangoJobAdmin(admin.ModelAdmin):
-    search_fields = ["name"]
-    list_display = ["id", "name", "next_run_time", "average_duration"]
+    search_fields = ["id"]
+    list_display = ["id", "next_run_time", "average_duration"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -43,12 +43,12 @@ class DjangoJobAdmin(admin.ModelAdmin):
 class DjangoJobExecutionAdmin(admin.ModelAdmin):
     status_color_mapping = {
         DjangoJobExecution.SUCCESS: "green",
-        DjangoJobExecution.SENT: "yellow",
+        DjangoJobExecution.SENT: "blue",
         DjangoJobExecution.ERROR: "red",
     }
 
     list_display = ["id", "job", "html_status", "local_run_time", "duration_text"]
-    list_filter = ["job__name", "run_time", "status"]
+    list_filter = ["job__id", "run_time", "status"]
 
     def html_status(self, obj):
         return mark_safe(

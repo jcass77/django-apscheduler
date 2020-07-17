@@ -51,8 +51,8 @@ class DjangoJobManager(models.Manager):
 
 
 class DjangoJob(models.Model):
-    name = models.CharField(
-        max_length=255, unique=True, help_text=_("Unique name for this job.")
+    id = models.CharField(
+        max_length=255, primary_key=True, help_text=_("Unique id for this job.")
     )
 
     next_run_time = models.DateTimeField(
@@ -75,7 +75,7 @@ class DjangoJob(models.Model):
             if self.next_run_time
             else "paused"
         )
-        return f"{self.name} ({status})"
+        return f"{self.id} ({status})"
 
     class Meta:
         ordering = ("next_run_time",)

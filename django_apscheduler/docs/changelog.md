@@ -19,6 +19,8 @@ This changelog is used to track all major changes to django_apscheduler.
 - Remove unused code fragments.
 - Add Python type annotations.
 - Implement various Django best practices for QuerySet management and model instance creation / updates.
+- Drop `DjangoJob.name` field in favor of aligning with using APScheduler's `id` field. NOTE: please run your Django
+  migrations again - might take a while depending on the number of `DjangoJobExecutions` in your database.
 
 **Fixes**
 

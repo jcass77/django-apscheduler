@@ -85,7 +85,7 @@ def test_register_job_dec(db, job, scheduler):
 
     dbj = DjangoJob.objects.first()
 
-    assert dbj.name == "tests.conftest.dummy_job"
+    assert dbj.id == "tests.conftest.dummy_job"
 
     j = scheduler.get_jobs()[0]
 
@@ -116,7 +116,7 @@ def test_issue_15(db):
 
     srt = datetime.datetime.now()
 
-    job = DjangoJob.objects.create(name="test", next_run_time=datetime.datetime.now())
+    job = DjangoJob.objects.create(id="test", next_run_time=datetime.datetime.now())
     DjangoJobExecution.objects.create(job=job, run_time=uct_datetime_to_datetime(srt))
 
     storage.get_or_create_job_execution(job, mock.Mock(scheduled_run_times=[srt]))
