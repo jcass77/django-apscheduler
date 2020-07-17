@@ -11,13 +11,12 @@ from pytz import utc
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.result_storage import DjangoResultStorage
-from django_apscheduler.util import serialize_dt
-from tests.conftest import job
+from django_apscheduler.util import uct_datetime_to_datetime
 
 logging.basicConfig()
 
 
-def test_add_job(db, scheduler):
+def test_add_job(db, job, scheduler):
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
 
     scheduler.start()
@@ -32,7 +31,7 @@ def test_add_job(db, scheduler):
     assert DjangoJob.objects.count() == 1
 
 
-def test_issue_20(db, scheduler):
+def test_issue_20(db, job, scheduler):
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
 
@@ -43,7 +42,7 @@ def test_issue_20(db, scheduler):
     assert DjangoJob.objects.count() == 0
 
 
-def test_remove_job(db, scheduler):
+def test_remove_job(db, job, scheduler):
     """ This test checks issue https://github.com/jarekwg/django-apscheduler/issues/6 """
 
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
@@ -77,7 +76,7 @@ def test_try_add_job_then_start(db, scheduler):
     assert job_for_tests.mock.call_count == 1
 
 
-def test_register_job_dec(db, scheduler):
+def test_register_job_dec(db, job, scheduler):
     register_job(scheduler, "interval", seconds=1)(job)
 
     scheduler.start()
@@ -86,14 +85,14 @@ def test_register_job_dec(db, scheduler):
 
     dbj = DjangoJob.objects.first()
 
-    assert dbj.name == "tests.conftest.job"
+    assert dbj.name == "tests.conftest.dummy_job"
 
     j = scheduler.get_jobs()[0]
 
-    assert j.id == "tests.conftest.job"
+    assert j.id == "tests.conftest.dummy_job"
 
 
-def test_job_events(db, scheduler):
+def test_job_events(db, job, scheduler):
     register_events(scheduler)
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
@@ -118,7 +117,7 @@ def test_issue_15(db):
     srt = datetime.datetime.now()
 
     job = DjangoJob.objects.create(name="test", next_run_time=datetime.datetime.now())
-    DjangoJobExecution.objects.create(job=job, run_time=serialize_dt(srt))
+    DjangoJobExecution.objects.create(job=job, run_time=uct_datetime_to_datetime(srt))
 
     storage.get_or_create_job_execution(job, mock.Mock(scheduled_run_times=[srt]))
 

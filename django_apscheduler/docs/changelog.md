@@ -18,6 +18,7 @@ This changelog is used to track all major changes to django_apscheduler.
 - Add `help_text` to model fields to document their use.
 - Remove unused code fragments.
 - Add Python type annotations.
+- Implement various Django best practices for QuerySet management and model instance creation / updates.
 
 **Fixes**
 

@@ -3,11 +3,12 @@ import pytz
 from apscheduler.executors.debug import DebugExecutor
 from apscheduler.schedulers.base import BaseScheduler
 from django.conf import settings
+from django.utils import timezone
 
 from django_apscheduler.jobstores import DjangoJobStore
 
 
-class DebugScheduler(BaseScheduler):
+class StubScheduler(BaseScheduler):
     def shutdown(self, wait=True):
         pass
 
@@ -15,13 +16,18 @@ class DebugScheduler(BaseScheduler):
         self._process_jobs()
 
 
-def job(*args, **kwargs):
-    print("JOB")
+def dummy_job(*args, **kwargs):
+    print(f"Dummy job called at {timezone.now()}")
+
+
+@pytest.fixture
+def job():
+    return dummy_job
 
 
 @pytest.fixture
 def scheduler():
-    scheduler = DebugScheduler(timezone=pytz.timezone("Europe/Moscow"))
+    scheduler = StubScheduler(timezone=pytz.timezone("Europe/Moscow"))
     scheduler.add_jobstore(DjangoJobStore())
     scheduler.add_executor(DebugExecutor())
 

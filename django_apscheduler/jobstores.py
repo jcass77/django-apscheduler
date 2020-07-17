@@ -4,17 +4,16 @@ import warnings
 from typing import Union, List
 
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
-from apscheduler.job import Job
+from apscheduler.job import Job as AppSchedulerJob
 from apscheduler.jobstores.base import BaseJobStore, JobLookupError
 from apscheduler.schedulers.base import BaseScheduler
 
 from django import db
-from django.db import connections
 from django.db.utils import OperationalError, ProgrammingError
 
 from django_apscheduler.models import DjangoJob
 from django_apscheduler.result_storage import DjangoResultStorage
-from django_apscheduler.util import deserialize_dt, serialize_dt
+from django_apscheduler.util import datetime_to_uct_datetime, uct_datetime_to_datetime
 
 logger = logging.getLogger("django_apscheduler")
 
@@ -46,7 +45,9 @@ def ignore_database_error(on_error_value=None):
 
 class DjangoJobStore(BaseJobStore):
     """
-    Stores jobs in a Django database.
+    Stores jobs in a Django database. Based on APScheduler's `MongoDBJobStore`.
+
+    See: https://github.com/agronholm/apscheduler/blob/master/apscheduler/jobstores/mongodb.py
 
     :param int pickle_protocol: pickle protocol level to use (for serialization), defaults to the
            highest available
@@ -57,27 +58,19 @@ class DjangoJobStore(BaseJobStore):
         self.pickle_protocol = pickle_protocol
 
     @ignore_database_error()
-    def lookup_job(self, job_id: str) -> Union[None, Job]:
-        logger.debug(f"Lookup for job '{job_id}'...")
+    def lookup_job(self, job_id: str) -> Union[None, AppSchedulerJob]:
         try:
             job_state = DjangoJob.objects.get(name=job_id).job_state
-            r = self._reconstitute_job(job_state) if job_state else None
-            logger.debug(f"Found job: {r}")
-
-            return r
+            return self._reconstitute_job(job_state) if job_state else None
 
         except DjangoJob.DoesNotExist:
             return None
 
-    # TODO: Remove this (unused?) method?
     @ignore_database_error(on_error_value=[])
-    def get_due_jobs(self, now) -> List[Job]:
-        logger.debug(f"get_due_jobs for time={now}...")
+    def get_due_jobs(self, now) -> List[AppSchedulerJob]:
         try:
-            jobs = self._get_jobs(next_run_time__lte=serialize_dt(now))
-            logger.debug(f"Found job: {jobs}")
-
-            return jobs
+            dt = uct_datetime_to_datetime(now)
+            return self._get_jobs(next_run_time__lte=dt)
         # TODO: Make this except clause more specific
         except Exception:
             logger.exception("Exception during 'get_due_jobs'")
@@ -86,20 +79,14 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error()
     def get_next_run_time(self):
         try:
-            return deserialize_dt(
-                DjangoJob.objects.filter(next_run_time__isnull=False)
-                .earliest("next_run_time")
-                .next_run_time
+            job = DjangoJob.objects.filter(next_run_time__isnull=False).earliest(
+                "next_run_time"
             )
+            return datetime_to_uct_datetime(job.next_run_time)
+
         except DjangoJob.DoesNotExist:
             # No active jobs - OK
-            pass
-
-        # TODO: Make this except clause more specific
-        except Exception:
-            logger.exception("Exception during get_next_run_time for jobs")
-
-        return None
+            return None
 
     @ignore_database_error(on_error_value=[])
     def get_all_jobs(self):
@@ -109,60 +96,51 @@ class DjangoJobStore(BaseJobStore):
         return jobs
 
     @ignore_database_error()
-    def add_job(self, job: Job):
+    def add_job(self, job: AppSchedulerJob):
         db_job, created = DjangoJob.objects.get_or_create(
+            name=job.id,
             defaults=dict(
-                next_run_time=serialize_dt(job.next_run_time),
+                next_run_time=uct_datetime_to_datetime(job.next_run_time),
                 job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
             ),
-            name=job.id,
         )
 
         if not created:
             logger.warning(
-                f"Job with id '{job.id}' already in jobstore! I'll refresh it."
+                f"Job with id '{job.name}' already in jobstore! Refreshing it..."
             )
-            db_job.next_run_time = serialize_dt(job.next_run_time)
+            db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
             db_job.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
             db_job.save()
 
     @ignore_database_error()
-    def update_job(self, job: Job):
-        updated = DjangoJob.objects.filter(name=job.id).update(
-            next_run_time=serialize_dt(job.next_run_time),
-            job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
-        )
+    def update_job(self, job: AppSchedulerJob):
+        try:
+            db_job = DjangoJob.objects.get(name=job.id)
+            db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
+            db_job.job_state = pickle.dumps(job.__getstate__(), self.pickle_protocol)
 
-        logger.debug(
-            f"Update job '{job}': next_run_time={serialize_dt(job.next_run_time)}, job_state={job.__getstate__()}",
-        )
+            db_job.save()
 
-        if updated == 0:
-            logger.info(f"Job with id '{job.id}' not found")
+        except DjangoJob.DoesNotExist:
             raise JobLookupError(job.id)
 
     @ignore_database_error()
     def remove_job(self, job_id: str):
-        _, num_deleted = DjangoJob.objects.filter(name=job_id).delete()
-        if num_deleted == 0:
-            logger.warning(f"Job with id '{job_id}' not found. Cannot remove job.")
+        try:
+            DjangoJob.objects.get(name=job_id).delete()
+        except DjangoJob.DoesNotExist:
+            raise JobLookupError(job_id)
 
     @ignore_database_error()
     def remove_all_jobs(self):
-        # TODO: Replace raw SQL below with Django ORM equivalents?
-        with connections["default"].cursor() as c:
-            c.execute(
-                """
-                DELETE FROM django_apscheduler_djangojobexecution;
-            """
-            )
-            c.execute("DELETE FROM django_apscheduler_djangojob;")
+        DjangoJob.all().delete()
 
     def _reconstitute_job(self, job_state):
         job_state = pickle.loads(job_state)
         job_state["jobstore"] = self
 
-        job = Job.__new__(Job)
+        job = AppSchedulerJob.__new__(AppSchedulerJob)
         job.__setstate__(job_state)
         job._scheduler = self._scheduler
         job._jobstore_alias = self._alias
@@ -170,10 +148,10 @@ class DjangoJobStore(BaseJobStore):
         return job
 
     def _get_jobs(self, **filters):
-        job_states = DjangoJob.objects.filter(**filters).values_list("id", "job_state")
         jobs = []
         failed_job_ids = set()
 
+        job_states = DjangoJob.objects.filter(**filters).values_list("id", "job_state")
         for job_id, job_state in job_states:
             try:
                 jobs.append(self._reconstitute_job(job_state))
@@ -186,14 +164,13 @@ class DjangoJobStore(BaseJobStore):
 
         # Remove all the jobs we failed to restore
         if failed_job_ids:
-            logger.warning(f"Removing bad jobs: {failed_job_ids}")
+            logger.warning(f"Removing failed jobs: {failed_job_ids}")
             DjangoJob.objects.filter(id__in=failed_job_ids).delete()
 
-        def map_jobs(job):
-            job.next_run_time = deserialize_dt(job.next_run_time)
-            return job
+        return jobs
 
-        return list(map(map_jobs, jobs))
+    def __repr__(self):
+        return f"<{self.__class__.__name__}(pickle_protocol={self.pickle_protocol})>"
 
 
 class _EventManager:
