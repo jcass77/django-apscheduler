@@ -51,8 +51,8 @@ class DjangoJobManager(models.Manager):
 
 
 class DjangoJob(models.Model):
-    name = models.CharField(
-        max_length=255, unique=True, help_text=_("Unique name for this job.")
+    id = models.CharField(
+        max_length=255, primary_key=True, help_text=_("Unique id for this job.")
     )
 
     next_run_time = models.DateTimeField(
@@ -71,11 +71,11 @@ class DjangoJob(models.Model):
 
     def __str__(self):
         status = (
-            f"next run at: {util.localize(self.next_run_time)}"
+            f"next run at: {util.get_local_dt_format(self.next_run_time)}"
             if self.next_run_time
             else "paused"
         )
-        return f"{self.name} ({status})"
+        return f"{self.id} ({status})"
 
     class Meta:
         ordering = ("next_run_time",)
@@ -93,14 +93,11 @@ class DjangoJobExecutionManager(models.Manager):
 
 
 class DjangoJobExecution(models.Model):
-    ADDED = "Added"
-    SENT = "Started execution"
-    MAX_INSTANCES = "Max instances reached!"
-    MISSED = "Missed!"
-    MODIFIED = "Modified!"
-    REMOVED = "Removed!"
-    ERROR = "Error!"
     SUCCESS = "Executed"
+    SENT = "Started execution"
+    ERROR = "Error!"
+
+    STATUS_CHOICES = [(x, x) for x in [SENT, ERROR, SUCCESS,]]
 
     job = models.ForeignKey(
         DjangoJob,
@@ -111,19 +108,7 @@ class DjangoJobExecution(models.Model):
         max_length=50,
         # TODO: Replace this with enumeration types when we drop support for Django 2.2
         # See: https://docs.djangoproject.com/en/dev/ref/models/fields/#field-choices-enum-types
-        choices=[
-            [x, x]
-            for x in [
-                ADDED,
-                SENT,
-                MAX_INSTANCES,
-                MISSED,
-                MODIFIED,
-                REMOVED,
-                ERROR,
-                SUCCESS,
-            ]
-        ],
+        choices=STATUS_CHOICES,
         help_text=_("The current status of this job execution."),
     )
     run_time = models.DateTimeField(
