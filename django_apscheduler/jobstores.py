@@ -3,7 +3,8 @@ import pickle
 import warnings
 from typing import Union, List
 
-from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
+from apscheduler import events
+from apscheduler.events import JobSubmissionEvent, JobExecutionEvent
 from apscheduler.job import Job as AppSchedulerJob
 from apscheduler.jobstores.base import BaseJobStore, JobLookupError
 from apscheduler.schedulers.base import BaseScheduler
@@ -12,11 +13,13 @@ from django import db
 from django.db import transaction
 from django.db.utils import OperationalError, ProgrammingError
 
-from django_apscheduler.models import DjangoJob
-from django_apscheduler.result_storage import DjangoResultStorage
-from django_apscheduler.util import datetime_to_uct_datetime, uct_datetime_to_datetime
+from django_apscheduler.models import DjangoJob, DjangoJobExecution
+from django_apscheduler.util import (
+    get_apscheduler_datetime,
+    get_django_internal_datetime,
+)
 
-logger = logging.getLogger("django_apscheduler")
+logger = logging.getLogger(__name__)
 
 
 # TODO: Remove this workaround, which seems to mute DB-related exceptions?
@@ -44,7 +47,135 @@ def ignore_database_error(on_error_value=None):
     return dec
 
 
-class DjangoJobStore(BaseJobStore):
+class DjangoResultStoreMixin:
+    """Mixin class that adds the ability for a JobStore to store job execution results in the Django database"""
+
+    lock = None
+
+    def start(self, scheduler, alias):
+        super().start(scheduler, alias)
+
+        # Use the scheduler's lock to ensure that only one event is processed at a time.
+        DjangoResultStoreMixin.lock = self._scheduler._create_lock()
+
+        self.register_event_listeners()
+
+    @classmethod
+    def handle_submission_event(cls, event: JobSubmissionEvent):
+        """
+        Create and return new job execution instance in the database when the job is submitted to the scheduler.
+
+        :param event: JobExecutionEvent instance
+        :return: DjangoJobExecution ID
+        """
+        if event.code != events.EVENT_JOB_SUBMITTED:
+            raise NotImplementedError(
+                f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
+                f"'{events.EVENT_JOB_SUBMITTED}'."
+            )
+
+        # Start logging a new job execution
+        job_execution = DjangoJobExecution.atomic_update_or_create(
+            cls.lock,
+            event.job_id,
+            event.scheduled_run_times[0],
+            DjangoJobExecution.SENT,
+        )
+
+        return job_execution.id
+
+    @classmethod
+    def handle_execution_event(cls, event: JobExecutionEvent) -> int:
+        """
+        Store successful job execution status in the database.
+
+        :param event: JobExecutionEvent instance
+        :return: DjangoJobExecution ID
+        """
+        if event.code != events.EVENT_JOB_EXECUTED:
+            raise NotImplementedError(
+                f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
+                f"'{events.EVENT_JOB_EXECUTED}'."
+            )
+
+        job_execution = DjangoJobExecution.atomic_update_or_create(
+            cls.lock, event.job_id, event.scheduled_run_time, DjangoJobExecution.SUCCESS
+        )
+        return job_execution.id
+
+    @classmethod
+    def handle_error_event(cls, event: JobExecutionEvent) -> int:
+        """
+        Store failed job execution status in the database.
+
+        :param event: JobExecutionEvent instance
+        :return: DjangoJobExecution ID
+        """
+        if event.code == events.EVENT_JOB_ERROR:
+
+            if event.exception:
+                exception = str(event.exception)
+                traceback = str(event.traceback)
+            else:
+                exception = f"Job '{event.job_id}' raised an error!"
+                traceback = None
+
+            job_execution = DjangoJobExecution.atomic_update_or_create(
+                cls.lock,
+                event.job_id,
+                event.scheduled_run_time,
+                DjangoJobExecution.ERROR,
+                exception=exception,
+                traceback=traceback,
+            )
+
+        elif event.code in [events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]:
+            # Job execution will not have been logged yet - do so now
+            if event.code == events.EVENT_JOB_MAX_INSTANCES:
+                status = DjangoJobExecution.MAX_INSTANCES
+
+                exception = (
+                    f"Execution of job '{event.job_id}' skipped: maximum number of running "
+                    f"instances reached!"
+                )
+
+            else:
+                status = DjangoJobExecution.MISSED
+                exception = f"Run time of job '{event.job_id}' was missed!"
+
+            job_execution = DjangoJobExecution.atomic_update_or_create(
+                cls.lock,
+                event.job_id,
+                event.scheduled_run_time,
+                status,
+                exception=exception,
+            )
+
+        else:
+            raise NotImplementedError(
+                f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
+                f"one of '{[events.EVENT_JOB_ERROR, events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]}'."
+            )
+
+        return job_execution.id
+
+    def register_event_listeners(self):
+        self._scheduler.add_listener(
+            self.handle_submission_event, events.EVENT_JOB_SUBMITTED
+        )
+        self._scheduler.add_listener(
+            self.handle_execution_event, events.EVENT_JOB_EXECUTED
+        )
+
+        self._scheduler.add_listener(
+            self.handle_error_event,
+            events.EVENT_JOB_MAX_INSTANCES
+            | events.EVENT_JOB_ERROR
+            | events.EVENT_JOB_MISSED,
+        )
+
+
+class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
     """
     Stores jobs in a Django database. Based on APScheduler's `MongoDBJobStore`.
 
@@ -70,7 +201,7 @@ class DjangoJobStore(BaseJobStore):
     @ignore_database_error(on_error_value=[])
     def get_due_jobs(self, now) -> List[AppSchedulerJob]:
         try:
-            dt = uct_datetime_to_datetime(now)
+            dt = get_django_internal_datetime(now)
             return self._get_jobs(next_run_time__lte=dt)
         # TODO: Make this except clause more specific
         except Exception:
@@ -83,7 +214,7 @@ class DjangoJobStore(BaseJobStore):
             job = DjangoJob.objects.filter(next_run_time__isnull=False).earliest(
                 "next_run_time"
             )
-            return datetime_to_uct_datetime(job.next_run_time)
+            return get_apscheduler_datetime(job.next_run_time, self._scheduler)
 
         except DjangoJob.DoesNotExist:
             # No active jobs - OK
@@ -101,7 +232,7 @@ class DjangoJobStore(BaseJobStore):
         db_job, created = DjangoJob.objects.get_or_create(
             id=job.id,
             defaults=dict(
-                next_run_time=uct_datetime_to_datetime(job.next_run_time),
+                next_run_time=get_django_internal_datetime(job.next_run_time),
                 job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
             ),
         )
@@ -116,7 +247,7 @@ class DjangoJobStore(BaseJobStore):
                     id=db_job.id
                 )
 
-                db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
+                db_job.next_run_time = get_django_internal_datetime(job.next_run_time)
                 db_job.job_state = pickle.dumps(
                     job.__getstate__(), self.pickle_protocol
                 )
@@ -127,9 +258,11 @@ class DjangoJobStore(BaseJobStore):
         # Acquire lock for update
         with transaction.atomic():
             try:
-                db_job = DjangoJob.objects.select_for_update(of=("self")).get(id=job.id)
+                db_job = DjangoJob.objects.select_for_update(of=("self",)).get(
+                    id=job.id
+                )
 
-                db_job.next_run_time = uct_datetime_to_datetime(job.next_run_time)
+                db_job.next_run_time = get_django_internal_datetime(job.next_run_time)
                 db_job.job_state = pickle.dumps(
                     job.__getstate__(), self.pickle_protocol
                 )
@@ -148,7 +281,11 @@ class DjangoJobStore(BaseJobStore):
 
     @ignore_database_error()
     def remove_all_jobs(self):
-        DjangoJob.all().delete()  # Implicit: will also delete all DjangoJobExecutions due to on_delete=models.CASCADE
+        # Implicit: will also delete all DjangoJobExecutions due to on_delete=models.CASCADE
+        DjangoJob.objects.all().delete()
+
+    def shutdown(self):
+        db.connection.close()
 
     def _reconstitute_job(self, job_state):
         job_state = pickle.loads(job_state)
@@ -185,51 +322,6 @@ class DjangoJobStore(BaseJobStore):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(pickle_protocol={self.pickle_protocol})>"
-
-
-class _EventManager:
-
-    logger = logger.getChild("events")
-
-    def __init__(self, storage=None):
-        self.storage = storage or DjangoResultStorage()
-
-    def __call__(self, event: JobSubmissionEvent):
-        logger.debug(f"Received event: {event}, {type(event)}, {event.__dict__}")
-        try:
-            if isinstance(event, JobSubmissionEvent):
-                self._process_submission_event(event)
-
-            elif isinstance(event, JobExecutionEvent):
-                self._process_execution_event(event)
-
-        except Exception as e:
-            self.logger.exception(str(e))
-
-    @ignore_database_error()
-    def _process_submission_event(self, event: JobSubmissionEvent):
-        try:
-            job = DjangoJob.objects.get(id=event.job_id)
-        except DjangoJob.DoesNotExist:
-            self.logger.warning(f"Job with id '{event.job_id}' not found in database!")
-            return
-
-        self.storage.get_or_create_job_execution(job, event)
-
-    @ignore_database_error()
-    def _process_execution_event(self, event: JobExecutionEvent):
-
-        try:
-            job = DjangoJob.objects.get(id=event.job_id)
-        except DjangoJob.DoesNotExist:
-            self.logger.warning(f"Job with id '{event.job_id}' not found in database")
-            return
-
-        self.storage.register_job_executed(job, event)
-
-
-def register_events(scheduler, result_storage=None):
-    scheduler.add_listener(_EventManager(result_storage))
 
 
 def register_job(scheduler: BaseScheduler, *a, **k) -> callable:

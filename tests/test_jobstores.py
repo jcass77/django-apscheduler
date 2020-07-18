@@ -2,16 +2,18 @@ import datetime
 import logging
 from unittest import mock
 
-import pytz
+from apscheduler import events
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from django.db.backends.utils import CursorWrapper
 from django.db.utils import OperationalError
-from pytz import utc
+from django.utils import timezone
 
-from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
+from django_apscheduler.jobstores import (
+    DjangoJobStore,
+    register_job,
+)
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
-from django_apscheduler.result_storage import DjangoResultStorage
-from django_apscheduler.util import uct_datetime_to_datetime
+from django_apscheduler.util import get_django_internal_datetime
 
 logging.basicConfig()
 
@@ -66,9 +68,7 @@ job_for_tests.mock = mock.Mock()
 
 def test_try_add_job_then_start(db, scheduler):
     scheduler.add_job(
-        job_for_tests,
-        next_run_time=datetime.datetime.now(pytz.timezone("Europe/Moscow")),
-        misfire_grace_time=None,
+        job_for_tests, next_run_time=timezone.now(), misfire_grace_time=None,
     )
     scheduler.start()
     scheduler._process_jobs()
@@ -92,8 +92,7 @@ def test_register_job_dec(db, job, scheduler):
     assert j.id == "tests.conftest.dummy_job"
 
 
-def test_job_events(db, job, scheduler):
-    register_events(scheduler)
+def test_job_events(db, job, djangojobstore, scheduler):
     scheduler.add_job(job, trigger="interval", seconds=1, id="job")
     scheduler.start()
 
@@ -101,25 +100,36 @@ def test_job_events(db, job, scheduler):
     dj.next_run_time -= datetime.timedelta(seconds=2)
     dj.save()
 
-    now = datetime.datetime.now(utc)
-    scheduler._dispatch_event(JobExecutionEvent(4096, "job", None, now))
-    scheduler._dispatch_event(JobSubmissionEvent(32768, "job", None, [now]))
+    now = timezone.now()
+    scheduler._dispatch_event(
+        JobSubmissionEvent(events.EVENT_JOB_SUBMITTED, "job", djangojobstore, [now])
+    )
+    scheduler._dispatch_event(
+        JobExecutionEvent(events.EVENT_JOB_EXECUTED, "job", djangojobstore, now)
+    )
 
     assert DjangoJobExecution.objects.count() == 1
 
 
-def test_issue_15(db):
+def test_issue_15(db, djangojobstore):
     """
     This test covers bug from https://github.com/jarekwg/django-apscheduler/issues/15
     """
-    storage = DjangoResultStorage()
+    srt = timezone.now()
 
-    srt = datetime.datetime.now()
+    job = DjangoJob.objects.create(id="test", next_run_time=timezone.now())
+    DjangoJobExecution.objects.create(
+        job=job, run_time=get_django_internal_datetime(srt)
+    )
 
-    job = DjangoJob.objects.create(id="test", next_run_time=datetime.datetime.now())
-    DjangoJobExecution.objects.create(job=job, run_time=uct_datetime_to_datetime(srt))
-
-    storage.get_or_create_job_execution(job, mock.Mock(scheduled_run_times=[srt]))
+    djangojobstore.handle_submission_event(
+        mock.Mock(
+            spec=JobSubmissionEvent,
+            job_id=job.id,
+            code=events.EVENT_JOB_SUBMITTED,
+            scheduled_run_times=[srt],
+        )
+    )
 
 
 def test_reconnect_on_db_error(transactional_db):
@@ -137,4 +147,4 @@ def test_reconnect_on_db_error(transactional_db):
         store = DjangoJobStore()
         # DjangoJob.objects._last_ping = 0
 
-        assert store.get_due_jobs(now=datetime.datetime.now()) == []
+        assert store.get_due_jobs(now=timezone.now()) == []

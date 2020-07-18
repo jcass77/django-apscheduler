@@ -1,14 +1,15 @@
 from datetime import datetime
 
+from apscheduler.schedulers.base import BaseScheduler
 from django.conf import settings
 from django.utils import formats
 from django.utils import timezone
 
 
-def uct_datetime_to_datetime(dt: datetime) -> datetime:
+def get_django_internal_datetime(dt: datetime) -> datetime:
     """
-    Converts datetime with timezone to datetime without timezone. This is required when receiving date times from
-    APScheduler if the default Django settings.USE_TZ = False (i.e. timezone support is disabled) is being used.
+    Get the naive or aware version of the datetime based on the configured `USE_TZ` Django setting. This is also the
+    format that Django uses to store datetimes internally.
     """
     if dt and not settings.USE_TZ and timezone.is_aware(dt):
         return timezone.make_naive(dt)
@@ -16,13 +17,13 @@ def uct_datetime_to_datetime(dt: datetime) -> datetime:
     return dt
 
 
-def datetime_to_uct_datetime(dt: datetime) -> datetime:
+def get_apscheduler_datetime(dt: datetime, scheduler: BaseScheduler) -> datetime:
     """
-    Converts datetime without timezone to datetime with timezone. This is required when sending date times to
-    APScheduler if the default ettings.USE_TZ = False (i.e. timezone support is disabled) is being used.
+    Make the datetime timezone aware (if necessary), using the same timezone as is currently configured for the
+    scheduler.
     """
-    if dt and not settings.USE_TZ and timezone.is_naive(dt):
-        return timezone.make_aware(dt)
+    if dt and timezone.is_naive(dt):
+        return timezone.make_aware(dt, timezone=scheduler.timezone)
 
     return dt
 

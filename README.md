@@ -42,9 +42,10 @@ Quick start
 
 * Instantiate a new scheduler as you would with APScheduler. For example:
 ```python
+  from django.conf import settings
   from apscheduler.schedulers.background import BackgroundScheduler
 
-  scheduler = BackgroundScheduler()
+  scheduler = BackgroundScheduler(timezone=settings.TIME_ZONE)
 ```
 
 * Instruct the scheduler to use `DjangoJobStore`:
@@ -55,13 +56,8 @@ Quick start
   scheduler.add_jobstore(DjangoJobStore(), 'djangojobstore')
 ```
 
-* If you want per-execution monitoring, call `register_events` on your scheduler:
-```python
-    from django_apscheduler.jobstores import register_events
-    register_events(scheduler)
-```
-
-*  Old job executions can be deleted with:
+* django_apscheduler will create a log of all job executions and their associated APScheduler status that can be viewed
+  via the Django admin interface. Delete old job executions with:
 ```python
     DjangoJobExecution.objects.delete_old_job_executions(604_800)  # Delete job executions older than 7 days
 ```
@@ -93,19 +89,17 @@ A full example project can be found in the 'examples' folder. Code snippet:
 ```python
 import time
 
+from django.conf import settings
 from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
+from django_apscheduler.jobstores import DjangoJobStore,  register_job
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(timezone=settings.TIME_ZONE)
 scheduler.add_jobstore(DjangoJobStore(), "default")
 
 @register_job(scheduler, "interval", seconds=1)
 def test_job():
     time.sleep(4)
     print("I'm a test job!")
-    # raise ValueError("Olala!")
-
-register_events(scheduler)
 
 scheduler.start()
 print("Scheduler started!")

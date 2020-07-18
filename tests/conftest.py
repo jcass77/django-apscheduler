@@ -1,16 +1,22 @@
+from unittest.mock import MagicMock
+
 import pytest
-import pytz
 from apscheduler.executors.debug import DebugExecutor
 from apscheduler.schedulers.base import BaseScheduler
 from django.conf import settings
 from django.utils import timezone
 
 from django_apscheduler.jobstores import DjangoJobStore
+from django_apscheduler.models import DjangoJobExecution
 
 
-class StubScheduler(BaseScheduler):
+class DummyScheduler(BaseScheduler):
+    def __init__(self, *args, **kwargs):
+        super(DummyScheduler, self).__init__(*args, **kwargs)
+        self.wakeup = MagicMock()
+
     def shutdown(self, wait=True):
-        pass
+        super(DummyScheduler, self).shutdown(wait)
 
     def wakeup(self):
         self._process_jobs()
@@ -26,9 +32,19 @@ def job():
 
 
 @pytest.fixture
-def scheduler():
-    scheduler = StubScheduler(timezone=pytz.timezone("Europe/Moscow"))
-    scheduler.add_jobstore(DjangoJobStore())
+def djangojobstore():
+    store = DjangoJobStore()
+    # store.start(None, "django")
+    yield store
+    store.shutdown()
+
+    DjangoJobExecution.objects.all().delete()
+
+
+@pytest.fixture
+def scheduler(djangojobstore):
+    scheduler = DummyScheduler(timezone=settings.TIME_ZONE)
+    scheduler.add_jobstore(djangojobstore, "default")
     scheduler.add_executor(DebugExecutor())
 
     return scheduler
