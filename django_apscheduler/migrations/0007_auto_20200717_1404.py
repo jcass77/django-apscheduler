@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_apscheduler', '0006_remove_djangojob_name'),
+        ("django_apscheduler", "0006_remove_djangojob_name"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='djangojobexecution',
-            name='id',
-            field=models.BigAutoField(help_text='Unique ID for this job execution.', primary_key=True, serialize=False),
+            model_name="djangojobexecution",
+            name="id",
+            field=models.BigAutoField(
+                help_text="Unique ID for this job execution.",
+                primary_key=True,
+                serialize=False,
+            ),
         ),
     ]

@@ -1,6 +1,6 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
-from django.db import models, connection
+from django.db import models, connection, transaction
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -8,8 +8,9 @@ import time
 import logging
 
 from django_apscheduler import util
+from django_apscheduler.util import get_django_internal_datetime
 
-logger = logging.getLogger("django_apscheduler")
+logger = logging.getLogger(__name__)
 
 
 # TODO: Remove this workaround?
@@ -93,8 +94,10 @@ class DjangoJobExecutionManager(models.Manager):
 
 
 class DjangoJobExecution(models.Model):
-    SUCCESS = "Executed"
     SENT = "Started execution"
+    SUCCESS = "Executed"
+    MISSED = "Missed!"
+    MAX_INSTANCES = "Max instances!"
     ERROR = "Error!"
 
     STATUS_CHOICES = [(x, x) for x in [SENT, ERROR, SUCCESS,]]
@@ -160,7 +163,83 @@ class DjangoJobExecution(models.Model):
 
     objects = DjangoJobExecutionManager()
 
-    def __unicode__(self):
+    @classmethod
+    def atomic_update_or_create(
+        cls,
+        lock,
+        job_id: str,
+        run_time: datetime,
+        status: str,
+        exception: str = None,
+        traceback: str = None,
+    ) -> "DjangoJobExecution":
+        """
+        Uses an APScheduler lock to ensures that only one database entry can be created / updated at a time.
+
+        This keeps django_apscheduler in sync with APScheduler and maintains a 1:1 mapping between APScheduler events
+        that are triggered and the corresponding DjangoJobExecution model instances that are persisted to the database.
+        :param lock: The lock to use when updating the database - probably obtained by calling _scheduler._create_lock()
+        :param job_id: The ID to the APScheduler job that this job execution is for.
+        :param run_time: The scheduler runtime for this job execution.
+        :param status: The new status for ths job execution.
+        :param exception: Details of any exceptions that need to be logged.
+        :param traceback: Traceback of any exceptions that occurred while executing the job.
+        :return: The ID of the newly created or updated DjangoJobExecution.
+        """
+
+        # Ensure that only one update / created can be processed at a time, staying in sync with corresponding
+        # scheduler.
+        with lock:
+            # Convert all datetimes to internal Django format before doing calculations and persisting in the database.
+            finished = get_django_internal_datetime(timezone.now())
+            run_time = get_django_internal_datetime(run_time)
+            duration = (finished - run_time).total_seconds()
+            finished = finished.timestamp()
+
+            try:
+                with transaction.atomic():
+                    job_execution = DjangoJobExecution.objects.select_for_update(
+                        of=("self",)
+                    ).get(job_id=job_id, run_time=run_time)
+
+                    if status == DjangoJobExecution.SENT:
+                        # Ignore 'submission' events for existing job executions. APScheduler does not appear to
+                        # guarantee the order in which events are received, and it is not unusual to receive an
+                        # `executed` before the corresponding `submitted` event. We just discard `submitted` events
+                        # that are received after the job has already been executed.
+                        #
+                        # If there are any more instances like this then we probably want to implement a full blown
+                        # state machine using something like `pytransitions`
+                        # See https://github.com/pytransitions/transitions
+                        return job_execution
+
+                    job_execution.finished = finished
+                    job_execution.duration = duration
+                    job_execution.status = status
+
+                    if exception:
+                        job_execution.exception = exception
+
+                    if traceback:
+                        job_execution.traceback = traceback
+
+                    job_execution.save()
+
+            except DjangoJobExecution.DoesNotExist:
+                # Execution was not created by a 'submit' previously - do so now
+                job_execution = DjangoJobExecution.objects.create(
+                    job_id=job_id,
+                    run_time=run_time,
+                    finished=finished,
+                    duration=duration,
+                    status=status,
+                    exception=exception,
+                    traceback=traceback,
+                )
+
+            return job_execution
+
+    def __str__(self):
         return f"Execution id={self.id}, status={self.status}, job={self.job}"
 
     class Meta:

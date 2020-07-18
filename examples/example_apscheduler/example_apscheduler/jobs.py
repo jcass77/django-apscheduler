@@ -2,10 +2,11 @@ import random
 import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from django.conf import settings
 
-from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
+from django_apscheduler.jobstores import DjangoJobStore, register_job
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(timezone=settings.TIME_ZONE)
 scheduler.add_jobstore(DjangoJobStore(), "default")
 
 
@@ -15,8 +16,6 @@ def test_job():
     print("I'm a test job!")
     # raise ValueError("Olala!")
 
-
-register_events(scheduler)
 
 scheduler.start()
 print("Scheduler started!")

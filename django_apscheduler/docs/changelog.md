@@ -24,8 +24,15 @@ This changelog is used to track all major changes to django_apscheduler.
 - Acquire a DB lock when updating `DjangoJob` or `DjangoJobExecution` instances. This should be safer for multi-threaded
   usage.
 - Switch to using `BigAutoField` for `DjangoJobExecution`'s primary keys. This should prevent running out of usable
-  ID's for deployments with a very large number of job executions in the database (Resolves [#36](https://github.com/jarekwg/django-apscheduler/issues/36)). 
+  ID's for deployments with a very large number of job executions in the database (Resolves [#36](https://github.com/jarekwg/django-apscheduler/issues/36)).
+- Implement `DjangoJob.shutdown()` method to close database connection when scheduler is shut down.
+- **BREAKING CHANGE:** Removed `jobstores.register_events`. Calling this method is no longer necessary as the
+  `DjangoJobStore` will automatically register for events that it cares about when the scheduler is started.
+- Ensure that Django and APScheduler always use the same timezones when passing datetimes between the two.
+- Use the configured scheduler's locking mechanism to keep the creation of `DjangoJobExecution` in sync with APScheduler
+  events.
 
 **Fixes**
 
 - Fix PEP8 code formatting violations.
+- Implement locking mechanism to prevent duplicate `DjangoJobExecution`s from being created (Resolves [#28](https://github.com/jarekwg/django-apscheduler/issues/28), [#30](https://github.com/jarekwg/django-apscheduler/issues/30), [#44](https://github.com/jarekwg/django-apscheduler/issues/44)).

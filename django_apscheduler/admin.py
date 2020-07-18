@@ -44,6 +44,8 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
     status_color_mapping = {
         DjangoJobExecution.SUCCESS: "green",
         DjangoJobExecution.SENT: "blue",
+        DjangoJobExecution.MAX_INSTANCES: "orange",
+        DjangoJobExecution.MISSED: "orange",
         DjangoJobExecution.ERROR: "red",
     }
 
