@@ -29,7 +29,7 @@ This changelog is used to track all major changes to django_apscheduler.
 - **BREAKING CHANGE:** Removed `jobstores.register_events`. Calling this method is no longer necessary as the
   `DjangoJobStore` will automatically register for events that it cares about when the scheduler is started.
 - Ensure that Django and APScheduler always use the same timezones when passing datetimes between the two.
-- Use the configured scheduler's locking mechanism to keep the creating of `DjangoJobExecution` in sync with APScheduler
+- Use the configured scheduler's locking mechanism to keep the creation of `DjangoJobExecution` in sync with APScheduler
   events.
 
 **Fixes**
