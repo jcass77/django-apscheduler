@@ -32,6 +32,8 @@ This changelog is used to track all major changes to django_apscheduler.
 - Ensure that Django and APScheduler always use the same timezones when passing datetimes between the two.
 - Use the configured scheduler's locking mechanism to keep the creation of `DjangoJobExecution` in sync with APScheduler
   events.
+- Update README on recommended usage, which includes using a `BlockingScheduler` with a custom Django management command
+  instead of running a `BackgroundScheduler` directly in a Django application.
 
 **Fixes**
 
