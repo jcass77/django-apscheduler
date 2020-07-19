@@ -11,7 +11,6 @@ from apscheduler.schedulers.base import BaseScheduler
 
 from django import db
 from django.db import transaction
-from django.db.utils import OperationalError, ProgrammingError
 
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.util import (
@@ -20,31 +19,6 @@ from django_apscheduler.util import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-# TODO: Remove this workaround, which seems to mute DB-related exceptions?
-def ignore_database_error(on_error_value=None):
-    def dec(func):
-        from functools import wraps
-
-        @wraps(func)
-        def inner(*a, **k):
-            try:
-                return func(*a, **k)
-            except (OperationalError, ProgrammingError) as e:
-                warnings.warn(
-                    f"Got OperationalError: {e}. Please, check that you have migrated the database via python "
-                    f"manage.py migrate",
-                    category=RuntimeWarning,
-                    stacklevel=3,
-                )
-                return on_error_value
-            finally:
-                db.connections.close_all()
-
-        return inner
-
-    return dec
 
 
 class DjangoResultStoreMixin:
@@ -189,7 +163,6 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         super().__init__()
         self.pickle_protocol = pickle_protocol
 
-    @ignore_database_error()
     def lookup_job(self, job_id: str) -> Union[None, AppSchedulerJob]:
         try:
             job_state = DjangoJob.objects.get(id=job_id).job_state
@@ -198,7 +171,6 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         except DjangoJob.DoesNotExist:
             return None
 
-    @ignore_database_error(on_error_value=[])
     def get_due_jobs(self, now) -> List[AppSchedulerJob]:
         try:
             dt = get_django_internal_datetime(now)
@@ -208,7 +180,6 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             logger.exception("Exception during 'get_due_jobs'")
             return []
 
-    @ignore_database_error()
     def get_next_run_time(self):
         try:
             job = DjangoJob.objects.filter(next_run_time__isnull=False).earliest(
@@ -220,14 +191,12 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             # No active jobs - OK
             return None
 
-    @ignore_database_error(on_error_value=[])
     def get_all_jobs(self):
         jobs = self._get_jobs()
         self._fix_paused_jobs_sorting(jobs)
 
         return jobs
 
-    @ignore_database_error()
     def add_job(self, job: AppSchedulerJob):
         db_job, created = DjangoJob.objects.get_or_create(
             id=job.id,
@@ -253,7 +222,6 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
                 )
                 db_job.save()
 
-    @ignore_database_error()
     def update_job(self, job: AppSchedulerJob):
         # Acquire lock for update
         with transaction.atomic():
@@ -272,14 +240,12 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             except DjangoJob.DoesNotExist:
                 raise JobLookupError(job.id)
 
-    @ignore_database_error()
     def remove_job(self, job_id: str):
         try:
             DjangoJob.objects.get(id=job_id).delete()
         except DjangoJob.DoesNotExist:
             raise JobLookupError(job_id)
 
-    @ignore_database_error()
     def remove_all_jobs(self):
         # Implicit: will also delete all DjangoJobExecutions due to on_delete=models.CASCADE
         DjangoJob.objects.all().delete()

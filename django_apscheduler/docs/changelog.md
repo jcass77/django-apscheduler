@@ -34,8 +34,10 @@ This changelog is used to track all major changes to django_apscheduler.
   events.
 - Update README on recommended usage, which includes using a `BlockingScheduler` with a custom Django management command
   instead of running a `BackgroundScheduler` directly in a Django application.
+- Remove `ignore_database_error` decorator. All database errors will be raised so that users can decide on the best
+  course of action for their specific use case (Resolves [#79](https://github.com/jarekwg/django-apscheduler/issues/79)).
 
 **Fixes**
 
 - Fix PEP8 code formatting violations.
-- Implement locking mechanism to prevent duplicate `DjangoJobExecution`s from being created (Resolves [#28](https://github.com/jarekwg/django-apscheduler/issues/28), [#30](https://github.com/jarekwg/django-apscheduler/issues/30), [#44](https://github.com/jarekwg/django-apscheduler/issues/44)).
+- Implement locking mechanism to prevent duplicate `DjangoJobExecution`s from being created (Fixes [#28](https://github.com/jarekwg/django-apscheduler/issues/28), [#30](https://github.com/jarekwg/django-apscheduler/issues/30), [#44](https://github.com/jarekwg/django-apscheduler/issues/44)).
