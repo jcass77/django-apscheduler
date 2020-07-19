@@ -324,6 +324,16 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         return f"<{self.__class__.__name__}(pickle_protocol={self.pickle_protocol})>"
 
 
+def register_events(scheduler, result_storage=None):
+    # TODO: Remove this deprecated function in release 0.5
+    # DjangoResultStoreMixin now takes care of registering for events automatically when the scheduler is started.
+    warnings.warn(
+        "'register_events' is deprecated since version 0.4.0. Please remove all references from your code.",
+        DeprecationWarning,
+    )
+    pass
+
+
 def register_job(scheduler: BaseScheduler, *a, **k) -> callable:
     """
     Helper decorator for job registration.
