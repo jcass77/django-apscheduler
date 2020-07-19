@@ -6,6 +6,7 @@ This changelog is used to track all major changes to django_apscheduler.
 
 **Enhancements**
 
+- Start maintaining changelog.
 - Drop support for Python 2.7, convert codebase to Python 3.6+.
 - CI: drop coverage for Python 2.7 and Django <= 2.1, which are no longer maintained upstream.
 - CI: add coverage for Python 3.7 and 3.8, as well as Django long term support (LTS) and the latest released versions.
@@ -38,6 +39,7 @@ This changelog is used to track all major changes to django_apscheduler.
   course of action for their specific use case (Resolves [#79](https://github.com/jarekwg/django-apscheduler/issues/79)).
 - Remove `DjangoJobManager`: users should be allowed to manage the DB connection themselves based on their
   implementation-specific use case. See the official Django recommendations at: https://code.djangoproject.com/ticket/21597#comment:29.
+- Add AUTHORS file.
 
 **Fixes**
 

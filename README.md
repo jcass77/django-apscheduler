@@ -159,3 +159,8 @@ are imposed by APScheduler:
   logic to ensure that a single APScheduler job store can be used by all of the worker processes. Neglecting this step
   could result in jobs being missed or executed multiple times, as well as duplicate entries in the `DjangoJobExecution`
   tables being created.
+  
+## Project resources
+
+- [Changelog](docs/changelog.md)
+- [Deployment steps](docs/deploy.md)
