@@ -36,6 +36,8 @@ This changelog is used to track all major changes to django_apscheduler.
   instead of running a `BackgroundScheduler` directly in a Django application.
 - Remove `ignore_database_error` decorator. All database errors will be raised so that users can decide on the best
   course of action for their specific use case (Resolves [#79](https://github.com/jarekwg/django-apscheduler/issues/79)).
+- Remove `DjangoJobManager`: users should be allowed to manage the DB connection themselves based on their
+  implementation-specific use case. See the official Django recommendations at: https://code.djangoproject.com/ticket/21597#comment:29.
 
 **Fixes**
 

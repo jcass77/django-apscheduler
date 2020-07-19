@@ -1,54 +1,15 @@
 from datetime import timedelta, datetime
 
-from django.db import models, connection, transaction
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-import time
 import logging
 
 from django_apscheduler import util
 from django_apscheduler.util import get_django_internal_datetime
 
 logger = logging.getLogger(__name__)
-
-
-# TODO: Remove this workaround?
-# The canonical approach seems to be to close connections instead if we know that they will be idle for a long
-# period of time - see: https://code.djangoproject.com/ticket/21597#comment:29
-class DjangoJobManager(models.Manager):
-    """
-    This manager pings database each request after 30s IDLE to prevent MysqlGoneAway error
-    """
-
-    _last_ping = 0
-    _ping_interval = 30
-
-    def get_queryset(self):
-        self.__ping()
-        return super().get_queryset()
-
-    def __ping(self):
-        if time.time() - self._last_ping < self._ping_interval:
-            return
-
-        try:
-            with connection.cursor() as c:
-                c.execute("SELECT 1")
-        # TODO: Make this except clause more specific
-        except Exception:
-            self.__reconnect()
-
-        self._last_ping = time.time()
-
-    def __reconnect(self):
-        logger.warning("Mysql closed the connection. Perform reconnect...")
-
-        if connection.connection:
-            connection.connection.close()
-            connection.connection = None
-        else:
-            logger.warning("Connection was already closed.")
 
 
 class DjangoJob(models.Model):
@@ -67,8 +28,6 @@ class DjangoJob(models.Model):
 
     # TODO: Consider using PickleField instead.
     job_state = models.BinaryField()
-
-    objects = DjangoJobManager()
 
     def __str__(self):
         status = (
