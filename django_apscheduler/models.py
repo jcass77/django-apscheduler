@@ -146,6 +146,11 @@ class DjangoJobExecution(models.Model):
         with lock:
             # Convert all datetimes to internal Django format before doing calculations and persisting in the database.
             run_time = get_django_internal_datetime(run_time)
+
+            finished = get_django_internal_datetime(timezone.now())
+            duration = (finished - run_time).total_seconds()
+            finished = finished.timestamp()
+
             try:
                 with transaction.atomic():
                     job_execution = DjangoJobExecution.objects.select_for_update(
@@ -163,10 +168,6 @@ class DjangoJobExecution(models.Model):
                         # See https://github.com/pytransitions/transitions
                         return job_execution
 
-                    finished = get_django_internal_datetime(timezone.now())
-                    duration = (finished - run_time).total_seconds()
-                    finished = finished.timestamp()
-
                     job_execution.finished = finished
                     job_execution.duration = duration
                     job_execution.status = status
@@ -181,10 +182,17 @@ class DjangoJobExecution(models.Model):
 
             except DjangoJobExecution.DoesNotExist:
                 # Execution was not created by a 'submit' previously - do so now
+                if status == DjangoJobExecution.SENT:
+                    # Don't log durations until after job has been submitted for execution
+                    finished = None
+                    duration = None
+
                 job_execution = DjangoJobExecution.objects.create(
                     job_id=job_id,
                     run_time=run_time,
                     status=status,
+                    duration=duration,
+                    finished=finished,
                     exception=exception,
                     traceback=traceback,
                 )
