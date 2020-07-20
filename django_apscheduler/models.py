@@ -26,7 +26,6 @@ class DjangoJob(models.Model):
         ),
     )
 
-    # TODO: Consider using PickleField instead.
     job_state = models.BinaryField()
 
     def __str__(self):
@@ -49,7 +48,7 @@ class DjangoJobExecutionManager(models.Manager):
         :param max_age: The maximum age (in seconds). Executions that are older
         than this will be deleted.
         """
-        self.filter(run_time__lte=timezone.now() - timedelta(seconds=max_age),).delete()
+        self.filter(run_time__lte=timezone.now() - timedelta(seconds=max_age)).delete()
 
 
 class DjangoJobExecution(models.Model):
@@ -70,6 +69,7 @@ class DjangoJobExecution(models.Model):
         on_delete=models.CASCADE,
         help_text=_("The job that this execution relates to."),
     )
+
     status = models.CharField(
         max_length=50,
         # TODO: Replace this with enumeration types when we drop support for Django 2.2
@@ -77,24 +77,19 @@ class DjangoJobExecution(models.Model):
         choices=STATUS_CHOICES,
         help_text=_("The current status of this job execution."),
     )
+
     run_time = models.DateTimeField(
         db_index=True, help_text=_("Date and time at which this job was executed."),
     )
 
+    # We store this value in the DB even though it can be calculated as `finished - run_time`. This allows quick
+    # calculation of average durations directly in the database later on.
     duration = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=None,
         null=True,
         help_text=_("Total run time of this job (in seconds)."),
-    )
-
-    started = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=None,
-        null=True,
-        help_text=_("Timestamp at which this job was started."),
     )
 
     finished = models.DecimalField(
@@ -150,11 +145,7 @@ class DjangoJobExecution(models.Model):
         # scheduler.
         with lock:
             # Convert all datetimes to internal Django format before doing calculations and persisting in the database.
-            finished = get_django_internal_datetime(timezone.now())
             run_time = get_django_internal_datetime(run_time)
-            duration = (finished - run_time).total_seconds()
-            finished = finished.timestamp()
-
             try:
                 with transaction.atomic():
                     job_execution = DjangoJobExecution.objects.select_for_update(
@@ -171,6 +162,10 @@ class DjangoJobExecution(models.Model):
                         # state machine using something like `pytransitions`
                         # See https://github.com/pytransitions/transitions
                         return job_execution
+
+                    finished = get_django_internal_datetime(timezone.now())
+                    duration = (finished - run_time).total_seconds()
+                    finished = finished.timestamp()
 
                     job_execution.finished = finished
                     job_execution.duration = duration
@@ -189,17 +184,15 @@ class DjangoJobExecution(models.Model):
                 job_execution = DjangoJobExecution.objects.create(
                     job_id=job_id,
                     run_time=run_time,
-                    finished=finished,
-                    duration=duration,
                     status=status,
                     exception=exception,
                     traceback=traceback,
                 )
 
-            return job_execution
+        return job_execution
 
     def __str__(self):
-        return f"Execution id={self.id}, status={self.status}, job={self.job}"
+        return f"{self.id}: job '{self.job_id}' ({self.status})"
 
     class Meta:
         ordering = ("-run_time",)

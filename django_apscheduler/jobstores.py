@@ -6,11 +6,11 @@ from typing import Union, List
 from apscheduler import events
 from apscheduler.events import JobSubmissionEvent, JobExecutionEvent
 from apscheduler.job import Job as AppSchedulerJob
-from apscheduler.jobstores.base import BaseJobStore, JobLookupError
+from apscheduler.jobstores.base import BaseJobStore, JobLookupError, ConflictingIdError
 from apscheduler.schedulers.base import BaseScheduler
 
 from django import db
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.util import (
@@ -29,7 +29,7 @@ class DjangoResultStoreMixin:
     def start(self, scheduler, alias):
         super().start(scheduler, alias)
 
-        # Use the scheduler's lock to ensure that only one event is processed at a time.
+        # Use the same type of lock as the scheduler to ensure that only one APScheduler event is processed at a time.
         DjangoResultStoreMixin.lock = self._scheduler._create_lock()
 
         self.register_event_listeners()
@@ -137,6 +137,7 @@ class DjangoResultStoreMixin:
         self._scheduler.add_listener(
             self.handle_submission_event, events.EVENT_JOB_SUBMITTED
         )
+
         self._scheduler.add_listener(
             self.handle_execution_event, events.EVENT_JOB_EXECUTED
         )
@@ -172,13 +173,8 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             return None
 
     def get_due_jobs(self, now) -> List[AppSchedulerJob]:
-        try:
-            dt = get_django_internal_datetime(now)
-            return self._get_jobs(next_run_time__lte=dt)
-        # TODO: Make this except clause more specific
-        except Exception:
-            logger.exception("Exception during 'get_due_jobs'")
-            return []
+        dt = get_django_internal_datetime(now)
+        return self._get_jobs(next_run_time__lte=dt)
 
     def get_next_run_time(self):
         try:
@@ -186,7 +182,6 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
                 "next_run_time"
             )
             return get_apscheduler_datetime(job.next_run_time, self._scheduler)
-
         except DjangoJob.DoesNotExist:
             # No active jobs - OK
             return None
@@ -198,29 +193,15 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         return jobs
 
     def add_job(self, job: AppSchedulerJob):
-        db_job, created = DjangoJob.objects.get_or_create(
-            id=job.id,
-            defaults=dict(
-                next_run_time=get_django_internal_datetime(job.next_run_time),
-                job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
-            ),
-        )
-
-        if not created:
-            logger.warning(
-                f"Job with id '{job.id}' already in jobstore! Refreshing it..."
-            )
-            # Acquire lock for update
-            with transaction.atomic():
-                db_job = DjangoJob.objects.select_for_update(of=("self",)).get(
-                    id=db_job.id
+        with transaction.atomic():
+            try:
+                return DjangoJob.objects.create(
+                    id=job.id,
+                    next_run_time=get_django_internal_datetime(job.next_run_time),
+                    job_state=pickle.dumps(job.__getstate__(), self.pickle_protocol),
                 )
-
-                db_job.next_run_time = get_django_internal_datetime(job.next_run_time)
-                db_job.job_state = pickle.dumps(
-                    job.__getstate__(), self.pickle_protocol
-                )
-                db_job.save()
+            except IntegrityError:
+                raise ConflictingIdError(job.id)
 
     def update_job(self, job: AppSchedulerJob):
         # Acquire lock for update
@@ -255,8 +236,6 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
     def _reconstitute_job(self, job_state):
         job_state = pickle.loads(job_state)
-        job_state["jobstore"] = self
-
         job = AppSchedulerJob.__new__(AppSchedulerJob)
         job.__setstate__(job_state)
         job._scheduler = self._scheduler
@@ -292,7 +271,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
 def register_events(scheduler, result_storage=None):
     # TODO: Remove this deprecated function in release 0.5
-    # DjangoResultStoreMixin now takes care of registering for events automatically when the scheduler is started.
+    # DjangoResultStoreMixin now takes care of registering event listeners automatically when the scheduler is started.
     warnings.warn(
         "'register_events' is deprecated since version 0.4.0. Please remove all references from your code.",
         DeprecationWarning,
@@ -300,7 +279,7 @@ def register_events(scheduler, result_storage=None):
     pass
 
 
-def register_job(scheduler: BaseScheduler, *a, **k) -> callable:
+def register_job(scheduler: BaseScheduler, *args, **kwargs) -> callable:
     """
     Helper decorator for job registration.
 
@@ -310,20 +289,17 @@ def register_job(scheduler: BaseScheduler, *a, **k) -> callable:
     Usage example::
 
         @register_job(scheduler, "interval", seconds=1)
-        def test_job():
-            time.sleep(4)
-            print("I'm a test job!")
+        def dummy_job():
+            print("I'm a job!")
 
     :param scheduler: Scheduler instance
-    :type scheduler: BaseScheduler
-
-    :param a, k: Params, will be passed to scheduler.add_job method. See :func:`BaseScheduler.add_job`
+    :param args, kwargs: Params, will be passed to scheduler.add_job method. See :func:`BaseScheduler.add_job`
     """
 
-    def inner(func):
-        k.setdefault("id", f"{func.__module__}.{func.__name__}")
-        scheduler.add_job(func, *a, **k)
+    def wrapper_register_job(func):
+        kwargs.setdefault("id", f"{func.__module__}.{func.__name__}")
+        scheduler.add_job(func, *args, **kwargs)
 
         return func
 
-    return inner
+    return wrapper_register_job

@@ -40,8 +40,17 @@ This changelog is used to track all major changes to django_apscheduler.
 - Remove `DjangoJobManager`: users should be allowed to manage the DB connection themselves based on their
   implementation-specific use case. See the official Django recommendations at: https://code.djangoproject.com/ticket/21597#comment:29.
 - Add AUTHORS file.
+- Increase test coverage.
+- Remove the `DjangoJobExecution.started` field. It appears that APScheduler only fires an event when the job is
+  submitted to the scheduler (not when job execution actually starts). We now calculate the job `duration` as the
+  elapsed time in seconds between the scheduled `run_time` and when we receive the `events.EVENT_EXECUTED`
+  APScheduler event. 
 
 **Fixes**
 
 - Fix PEP8 code formatting violations.
 - Implement locking mechanism to prevent duplicate `DjangoJobExecution`s from being created (Fixes [#28](https://github.com/jarekwg/django-apscheduler/issues/28), [#30](https://github.com/jarekwg/django-apscheduler/issues/30), [#44](https://github.com/jarekwg/django-apscheduler/issues/44)).
+- `DjangoJobStore.add_job` now raises a `ConflictingIdError` if a job with that particular ID already exists in the job
+  store. This aligns with the behavior expected by the APScheduler interface. Use the `replace_existing` parameter to
+  update existing jobs instead.   
+

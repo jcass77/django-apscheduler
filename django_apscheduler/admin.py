@@ -9,7 +9,7 @@ from django_apscheduler import util
 @admin.register(DjangoJob)
 class DjangoJobAdmin(admin.ModelAdmin):
     search_fields = ["id"]
-    list_display = ["id", "next_run_time", "average_duration"]
+    list_display = ["id", "local_run_time", "average_duration"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -18,13 +18,14 @@ class DjangoJobAdmin(admin.ModelAdmin):
             DjangoJobExecution.objects.filter(
                 job_id__in=qs.values_list("id", flat=True)
             )
+            .order_by("job_id")
             .values_list("job")
             .annotate(avg_duration=Avg("duration"))
         )
 
         return qs
 
-    def next_run_time(self, obj):
+    def local_run_time(self, obj):
         if obj.next_run_time:
             return util.get_local_dt_format(obj.next_run_time)
 
@@ -62,9 +63,6 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
 
     def duration_text(self, obj):
         return obj.duration or "N/A"
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related("job")
 
     html_status.short_description = "Status"
     duration_text.short_description = "Duration (sec)"
