@@ -145,11 +145,7 @@ class DjangoJobExecution(models.Model):
         # scheduler.
         with lock:
             # Convert all datetimes to internal Django format before doing calculations and persisting in the database.
-            finished = get_django_internal_datetime(timezone.now())
             run_time = get_django_internal_datetime(run_time)
-            duration = (finished - run_time).total_seconds()
-            finished = finished.timestamp()
-
             try:
                 with transaction.atomic():
                     job_execution = DjangoJobExecution.objects.select_for_update(
@@ -166,6 +162,10 @@ class DjangoJobExecution(models.Model):
                         # state machine using something like `pytransitions`
                         # See https://github.com/pytransitions/transitions
                         return job_execution
+
+                    finished = get_django_internal_datetime(timezone.now())
+                    duration = (finished - run_time).total_seconds()
+                    finished = finished.timestamp()
 
                     job_execution.finished = finished
                     job_execution.duration = duration
@@ -184,8 +184,6 @@ class DjangoJobExecution(models.Model):
                 job_execution = DjangoJobExecution.objects.create(
                     job_id=job_id,
                     run_time=run_time,
-                    finished=finished,
-                    duration=duration,
                     status=status,
                     exception=exception,
                     traceback=traceback,

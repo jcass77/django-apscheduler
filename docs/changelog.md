@@ -41,6 +41,10 @@ This changelog is used to track all major changes to django_apscheduler.
   implementation-specific use case. See the official Django recommendations at: https://code.djangoproject.com/ticket/21597#comment:29.
 - Add AUTHORS file.
 - Increase test coverage.
+- Remove the `DjangoJobExecution.started` field. It appears that APScheduler only fires an event when the job is
+  submitted to the scheduler (not when job execution actually starts). We now calculate the job `duration` as the
+  elapsed time in seconds between the scheduled `run_time` and when we receive the `events.EVENT_EXECUTED`
+  APScheduler event. 
 
 **Fixes**
 
