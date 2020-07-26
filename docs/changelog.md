@@ -54,7 +54,7 @@ This changelog is used to track all major changes to django_apscheduler.
   update existing jobs instead.   
 
 
-# v0.3.1 (2020-07-12)
+## v0.3.1 (2020-07-12)
 
 - Various bug fixes (see commit history for changes).
 
