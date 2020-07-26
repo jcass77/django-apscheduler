@@ -57,11 +57,15 @@ from django.conf import settings
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from django.core.management.base import BaseCommand
-from django_apscheduler.jobstores import DjangoJobStore
+from django_apscheduler.jobstores import DjangoJobStore, register_events
 from django_apscheduler.models import DjangoJobExecution
 
 
 logger = logging.getLogger(__name__)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logger.addHandler(console)
+logger.setLevel(logging.INFO)
 
 
 def my_job():
@@ -82,7 +86,7 @@ class Command(BaseCommand):
         
         scheduler.add_job(
             my_job,
-            trigger=CronTrigger(second="*/10"),  # Every 10 minutes
+            trigger=CronTrigger(second="*/10"),  # Every 10 seconds
             id="my_job",
             max_instances=1,
             replace_existing=True,
@@ -101,6 +105,7 @@ class Command(BaseCommand):
         logger.info(
             "Added weekly job: 'delete_old_job_executions'."
         )
+        register_events(scheduler)
 
         try:
             logger.info("Starting scheduler...")
