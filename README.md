@@ -119,13 +119,15 @@ class Command(BaseCommand):
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-* **Don't forget to give each job a unique id using the `id` parameter. For example:**
+- The `id` assigned to each job **must be unique**. For example:
 ```python
 @scheduler.scheduled_job("interval", seconds=60, id="job")
 def job():
     pass
 ```
-or use the custom `register_job` decorator for job registration. This will assign a unique id automatically:
+
+- You can also use the custom `@register_job` decorator for job registration. This will assign a unique `id`
+  based on the Python module and function name automatically:
 ```python
 from django_apscheduler.jobstores import register_job
 
