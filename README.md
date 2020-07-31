@@ -148,6 +148,10 @@ def job():
 Caveats
 -------
 
+django-apscheduler assumes that you are already familiar with APScheduler and its proper use. If not, then please head
+over to the project page and have a look through the [APScheduler documentation](https://apscheduler.readthedocs.io/en/latest/index.html).
+
+Most importantly: **your choice of scheduler [matters](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)**.
 If you would prefer running a `BackgroundScheduler` directly in your Django application so that you can add and remove
 jobs dynamically at runtime, instead of using a `BlockingScheduler` in a separate Django management command on a fixed
 execution schedule as outlined above, then you should be aware of the following potential issues and limitations that
