@@ -160,11 +160,11 @@ are imposed by APScheduler:
 - Using APScheduler with uWSGI requires some additional [configuration steps](https://apscheduler.readthedocs.io/en/latest/faq.html#how-can-i-use-apscheduler-with-uwsgi)
   in order to re-enable threading support.
   
-- If you intend to run more than one worker process in production, then it is likely that you will have to [implement
-  your own remote processing](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
-  logic to ensure that a single APScheduler job store can be used by all of the worker processes. Neglecting this step
-  could result in jobs being missed or executed multiple times, as well as duplicate entries in the `DjangoJobExecution`
-  tables being created.
+- If you intend to run more than one worker process as part of your [Django deployment in production](https://docs.djangoproject.com/en/3.0/howto/deployment/#deploying-django),
+  then it is likely that you will have to [implement your own remote processing](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
+  logic to ensure that a single `DjangoJobStore` can be used by all of the worker processes in a coordinated and
+  synchronized way. Neglecting this step could result in jobs being missed or executed multiple times, as well as
+  duplicate entries in the `DjangoJobExecution` tables being created.
   
 ## Project resources
 
