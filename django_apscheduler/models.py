@@ -153,9 +153,9 @@ class DjangoJobExecution(models.Model):
 
             try:
                 with transaction.atomic():
-                    job_execution = DjangoJobExecution.objects.select_for_update(
-                        of=("self",)
-                    ).get(job_id=job_id, run_time=run_time)
+                    job_execution = DjangoJobExecution.objects.select_for_update().get(
+                        job_id=job_id, run_time=run_time
+                    )
 
                     if status == DjangoJobExecution.SENT:
                         # Ignore 'submission' events for existing job executions. APScheduler does not appear to

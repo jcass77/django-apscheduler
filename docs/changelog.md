@@ -2,6 +2,14 @@
 
 This changelog is used to track all major changes to django_apscheduler.
 
+
+## v0.4.1 (UNRELEASED)
+
+**Fixes**
+
+- Drop use of `of` parameter in `select_for_update`, which is not supported by MariaDB and MySQL (Fixes [#94](https://github.com/jarekwg/django-apscheduler/issues/94)).
+
+
 ## v0.4.0 (2020-07-27)
 
 **Enhancements**

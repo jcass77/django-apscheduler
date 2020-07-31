@@ -207,9 +207,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         # Acquire lock for update
         with transaction.atomic():
             try:
-                db_job = DjangoJob.objects.select_for_update(of=("self",)).get(
-                    id=job.id
-                )
+                db_job = DjangoJob.objects.get(id=job.id)
 
                 db_job.next_run_time = get_django_internal_datetime(job.next_run_time)
                 db_job.job_state = pickle.dumps(
