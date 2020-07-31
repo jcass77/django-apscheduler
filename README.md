@@ -14,8 +14,14 @@ Features of this package include:
 
 - A custom `DjangoJobStore`: an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
   that persists scheduled jobs to the Django database.
+  
+  ![Jobs](docs/screenshots/job_overview.png)
+  
 - The job store also maintains a history of all executions of the currently scheduled jobs, along with status codes and
   exceptions (if any).  
+  
+  ![Jobs](docs/screenshots/execution_overview.png)
+    
 - You can view the scheduled jobs and monitor the job execution directly via the Django admin interface.
 
 Installation
