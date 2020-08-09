@@ -6,7 +6,7 @@ key individuals, and as a stepping stone to more automation.
 
 ## Creating releases
 
-1. Update changelog and commit it.
+1. Update changelog and bump the version number in `setup.py`. Commit changes.
 
 2. Merge the release branch (``develop`` in the example) into master:
 
@@ -24,4 +24,5 @@ key individuals, and as a stepping stone to more automation.
 5. Merge ``master`` back into ``develop`` and push the branch to GitHub.
 
 6. Document the release on GitHub by clicking on the 'Releases' link on the landing page,
-   and editing the tag that was just created.
+   and editing the tag that was just created. Set both the tag version and release title
+   to "v0.3.0".
