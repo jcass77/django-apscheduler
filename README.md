@@ -175,4 +175,4 @@ are imposed by APScheduler:
 ## Project resources
 
 - [Changelog](docs/changelog.md)
-- [Deployment steps](docs/deploy.md)
+- [Release procedures](docs/releasing.md)
