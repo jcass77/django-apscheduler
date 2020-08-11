@@ -42,26 +42,41 @@ class DjangoResultStoreMixin:
         :param event: JobExecutionEvent instance
         :return: DjangoJobExecution ID
         """
-        if event.code != events.EVENT_JOB_SUBMITTED:
-            raise NotImplementedError(
-                f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
-                f"'{events.EVENT_JOB_SUBMITTED}'."
+        if event.code == events.EVENT_JOB_SUBMITTED:
+            # Start logging a new job execution
+            job_execution = DjangoJobExecution.atomic_update_or_create(
+                cls.lock,
+                event.job_id,
+                event.scheduled_run_times[0],
+                DjangoJobExecution.SENT,
+            )
+        elif event.code == events.EVENT_JOB_MAX_INSTANCES:
+            status = DjangoJobExecution.MAX_INSTANCES
+
+            exception = (
+                f"Execution of job '{event.job_id}' skipped: maximum number of running "
+                f"instances reached!"
             )
 
-        # Start logging a new job execution
-        job_execution = DjangoJobExecution.atomic_update_or_create(
-            cls.lock,
-            event.job_id,
-            event.scheduled_run_times[0],
-            DjangoJobExecution.SENT,
-        )
+            job_execution = DjangoJobExecution.atomic_update_or_create(
+                cls.lock,
+                event.job_id,
+                event.scheduled_run_times[0],
+                status,
+                exception=exception,
+            )
+        else:
+            raise NotImplementedError(
+                f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
+                f"one of '{[events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES]}'."
+            )
 
         return job_execution.id
 
     @classmethod
     def handle_execution_event(cls, event: JobExecutionEvent) -> int:
         """
-        Store successful job execution status in the database.
+        Store "successful" job execution status in the database.
 
         :param event: JobExecutionEvent instance
         :return: DjangoJobExecution ID
@@ -80,7 +95,7 @@ class DjangoResultStoreMixin:
     @classmethod
     def handle_error_event(cls, event: JobExecutionEvent) -> int:
         """
-        Store failed job execution status in the database.
+        Store "failed" job execution status in the database.
 
         :param event: JobExecutionEvent instance
         :return: DjangoJobExecution ID
@@ -103,19 +118,10 @@ class DjangoResultStoreMixin:
                 traceback=traceback,
             )
 
-        elif event.code in [events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]:
+        elif event.code == events.EVENT_JOB_MISSED:
             # Job execution will not have been logged yet - do so now
-            if event.code == events.EVENT_JOB_MAX_INSTANCES:
-                status = DjangoJobExecution.MAX_INSTANCES
-
-                exception = (
-                    f"Execution of job '{event.job_id}' skipped: maximum number of running "
-                    f"instances reached!"
-                )
-
-            else:
-                status = DjangoJobExecution.MISSED
-                exception = f"Run time of job '{event.job_id}' was missed!"
+            status = DjangoJobExecution.MISSED
+            exception = f"Run time of job '{event.job_id}' was missed!"
 
             job_execution = DjangoJobExecution.atomic_update_or_create(
                 cls.lock,
@@ -134,8 +140,16 @@ class DjangoResultStoreMixin:
         return job_execution.id
 
     def register_event_listeners(self):
+        """
+        Register various event listeners.
+
+        See: https://github.com/agronholm/apscheduler/blob/master/docs/modules/events.rst for details on which event
+        class is used for each event code.
+
+        """
         self._scheduler.add_listener(
-            self.handle_submission_event, events.EVENT_JOB_SUBMITTED
+            self.handle_submission_event,
+            events.EVENT_JOB_SUBMITTED | events.EVENT_JOB_MAX_INSTANCES,
         )
 
         self._scheduler.add_listener(
@@ -143,10 +157,7 @@ class DjangoResultStoreMixin:
         )
 
         self._scheduler.add_listener(
-            self.handle_error_event,
-            events.EVENT_JOB_MAX_INSTANCES
-            | events.EVENT_JOB_ERROR
-            | events.EVENT_JOB_MISSED,
+            self.handle_error_event, events.EVENT_JOB_ERROR | events.EVENT_JOB_MISSED,
         )
 
 

@@ -32,13 +32,14 @@ class TestDjangoResultStoreMixin:
             jobstore.handle_submission_event(event)
 
     @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "event_code", [events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES,],
+    )
     def test_handle_submission_event_creates_job_execution(
-        self, jobstore, create_add_job
+        self, event_code, jobstore, create_add_job
     ):
         job = create_add_job(jobstore, dummy_job, datetime(2016, 5, 3))
-        event = JobSubmissionEvent(
-            events.EVENT_JOB_SUBMITTED, job.id, jobstore, [timezone.now()]
-        )
+        event = JobSubmissionEvent(event_code, job.id, jobstore, [timezone.now()])
         jobstore.handle_submission_event(event)
 
         assert DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
@@ -75,12 +76,7 @@ class TestDjangoResultStoreMixin:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
-        "event_code",
-        [
-            events.EVENT_JOB_MAX_INSTANCES,
-            events.EVENT_JOB_MISSED,
-            events.EVENT_JOB_ERROR,
-        ],
+        "event_code", [events.EVENT_JOB_MISSED, events.EVENT_JOB_ERROR,],
     )
     def test_handle_error_event_creates_job_execution(
         self, jobstore, create_add_job, event_code
@@ -113,11 +109,9 @@ class TestDjangoResultStoreMixin:
         assert all(
             event_code in registered_event_codes
             for event_code in [
-                events.EVENT_JOB_SUBMITTED,
+                events.EVENT_JOB_SUBMITTED | events.EVENT_JOB_MAX_INSTANCES,
                 events.EVENT_JOB_EXECUTED,
-                events.EVENT_JOB_MAX_INSTANCES
-                | events.EVENT_JOB_ERROR
-                | events.EVENT_JOB_MISSED,
+                events.EVENT_JOB_ERROR | events.EVENT_JOB_MISSED,
             ]
         )
 
