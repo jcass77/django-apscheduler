@@ -3,14 +3,14 @@
 This changelog is used to track all major changes to django_apscheduler.
 
 
-## v0.4.2 (UNRELEASED)
+## v0.4.2 (2020-08-11)
 
 **Fixes**
 
 - Fix mapping of event listener APScheduler codes to event classes (Fixes [#98](https://github.com/jarekwg/django-apscheduler/issues/98)).
 
 
-## v0.4.1 (2020-07-09)
+## v0.4.1 (2020-08-09)
 
 **Fixes**
 
