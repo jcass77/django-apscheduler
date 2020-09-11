@@ -1,5 +1,5 @@
 ---
-name: Bug report / feature enhancement
+name: New issue
 about: **This issue tracker is for reporting bugs in django-apscheduler only!**
 
 There are much better sources for obtaining information and howto guides for the up stream [APScheduler](https://apscheduler.readthedocs.io/en/stable/)
