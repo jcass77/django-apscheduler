@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create an issue to help us improve.
+about: This issue tracker is for reporting bugs in django-apscheduler only! Please see the links below for general assistance.
 title: ''
 labels: ''
 assignees: ''
