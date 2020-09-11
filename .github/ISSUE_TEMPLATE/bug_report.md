@@ -1,14 +1,14 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: **This issue tracker is for reporting bugs in django-apscheduler only!** There are much better sources for obtaining information and howto guides for the up stream [APScheduler](https://apscheduler.readthedocs.io/en/stable/) and [Django](https://docs.djangoproject.com) projects. Please use them as we unfortunately do not have the capacity to respond to general requests for assistance here.
 title: ''
 labels: ''
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Describe the bug / feature**
+A clear and concise description of what the bug is or what feature you are looking for.
 
 **To Reproduce**
 Steps to reproduce the behavior:
@@ -22,17 +22,3 @@ A clear and concise description of what you expected to happen.
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
-
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
