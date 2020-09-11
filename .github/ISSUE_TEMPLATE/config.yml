@@ -1,8 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: APScheduler
+  - name: APScheduler docs
+    url: https://apscheduler.readthedocs.io
+    about: Refer to the official APScheduler docs for general info (e.g. scheduling and running jobs).
+  - name: APScheduler project
     url: https://github.com/agronholm/apscheduler
-    about: Please direct APScheduler-related issues here.
+    about: Please direct APScheduler-related issues to this project up stream.
   - name: Django documentation
     url: https://docs.djangoproject.com
-    about: Please review the official Django documentation for questions related to Django in general.
+    about: Please review the official Django documentation for general Django information (e.g. models and migrations).
