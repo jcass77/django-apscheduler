@@ -1,6 +1,6 @@
 ---
-name: New issue
-about: This issue tracker is for reporting bugs in django-apscheduler ONLY! Please see the links below if you require general assistance.
+name: New issue or feature
+about: This issue tracker is for reporting bugs and logging feature requests for django-apscheduler ONLY! Please see the links below if you require general assistance.
 title: ''
 labels: ''
 assignees: ''
