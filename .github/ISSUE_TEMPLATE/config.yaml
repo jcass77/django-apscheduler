@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: APScheduler
+    url: https://github.com/agronholm/apscheduler
+    about: Please direct APScheduler-related issues here.
+  - name: Django documentation
+    url: https://docs.djangoproject.com
+    about: Please review the official Django documentation for questions related to Django in general.
