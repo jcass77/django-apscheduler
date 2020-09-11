@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: **This issue tracker is for reporting bugs in django-apscheduler only!** There are much better sources for obtaining information and howto guides for the up stream [APScheduler](https://apscheduler.readthedocs.io/en/stable/) and [Django](https://docs.djangoproject.com) projects. Please use them as we unfortunately do not have the capacity to respond to general requests for assistance here.
+about: Create an issue to help us improve.
 title: ''
 labels: ''
 assignees: ''
