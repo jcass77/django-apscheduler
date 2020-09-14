@@ -1,9 +1,16 @@
+from time import sleep
+
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from django.contrib import admin
 from django.db.models import Avg
+from django.utils import timezone
 from django.utils.safestring import mark_safe
+
 
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler import util
+from django_apscheduler.jobstores import DjangoJobStore
 
 
 @admin.register(DjangoJob)
@@ -38,6 +45,20 @@ class DjangoJobAdmin(admin.ModelAdmin):
             return "None"
 
     average_duration.short_description = "Average Duration (sec)"
+
+    actions = ['run_selected_jobs']
+
+    def run_selected_jobs(self, request, queryset):
+        scheduler = BackgroundScheduler()
+        scheduler.add_jobstore(DjangoJobStore(), "default")
+        scheduler.start()
+        for item in queryset:
+            job = scheduler.get_job(item.id, "default")
+            if job:
+                scheduler.modify_job(job.id, "default", next_run_time=timezone.now())
+        sleep(0.1)
+        scheduler.shutdown()
+    run_selected_jobs.short_description = "Run the selected django jobs"
 
 
 @admin.register(DjangoJobExecution)
