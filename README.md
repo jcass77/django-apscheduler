@@ -71,10 +71,14 @@ from django_apscheduler.models import DjangoJobExecution
 
 logger = logging.getLogger(__name__)
 
-
+scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
+scheduler.add_jobstore(DjangoJobStore(), "default")
+        
+@register_job(scheduler, "cron", second='*/10', max_instances=1, replace_existing=True)# Every 10 seconds
 def my_job():
     #  Your job processing logic here... 
-    pass
+    logger.info("Added job 'my_job'.")
+
 
 def delete_old_job_executions(max_age=604_800):
     """This job deletes all apscheduler job executions older than `max_age` from the database."""
@@ -85,18 +89,8 @@ class Command(BaseCommand):
     help = "Runs apscheduler."
 
     def handle(self, *args, **options):
-        scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
-        scheduler.add_jobstore(DjangoJobStore(), "default")
-        
-        scheduler.add_job(
-            my_job,
-            trigger=CronTrigger(second="*/10"),  # Every 10 seconds
-            id="my_job",
-            max_instances=1,
-            replace_existing=True,
-        )
-        logger.info("Added job 'my_job'.")
 
+        
         scheduler.add_job(
             delete_old_job_executions,
             trigger=CronTrigger(
@@ -127,22 +121,10 @@ class Command(BaseCommand):
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-- The `id` assigned to each job **must be unique**. For example:
-```python
-@scheduler.scheduled_job("interval", seconds=60, id="job")
-def job():
-    pass
-```
 
-- You can also use the custom `@register_job` decorator for job registration. This will assign a unique `id`
-  based on the Python module and function name automatically:
-```python
-from django_apscheduler.jobstores import register_job
+- If you use [apscheduler.schedulers.base.BaseScheduler.add_job(func, trigger=None, args=None, kwargs=None, id=None, name=None, misfire_grace_time=undefined, coalesce=undefined, max_instances=undefined, next_run_time=undefined, jobstore='default', executor='default', replace_existing=False, **trigger_args)](https://apscheduler.readthedocs.io/en/latest/modules/schedulers/base.html#apscheduler.schedulers.base.BaseScheduler.add_job) to register jobs, the `id` assigned to each job **must be unique**. You can also use the custom [`@register_job`](https://github.com/jarekwg/django-apscheduler/blob/939042d174627bcf421241989dd5e497bc53db89/django_apscheduler/jobstores.py#L291) decorator for job registration. This will assign a unique `id`
+  based on the Python module and function name automatically.
 
-@register_job("interval", seconds=60)
-def job():
-    pass
-```
 
 - All of the jobs that have been scheduled are viewable directly in the Django admin interface.
 
