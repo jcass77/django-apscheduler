@@ -131,17 +131,6 @@ class Command(BaseCommand):
   APScheduler's `@scheduler.scheduled_job`, except that it automatically assigns a unique job `id` based on the Python
   module and function name:
 ```python
-from django.conf import settings
-
-from apscheduler.schedulers.blocking import BlockingScheduler
-from django_apscheduler.jobstores import DjangoJobStore
-
-from django_apscheduler.jobstores import register_job
-
-
-scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
-scheduler.add_jobstore(DjangoJobStore(), "default")
-
 @register_job(scheduler, "interval", seconds=60)
 def job():
     pass
