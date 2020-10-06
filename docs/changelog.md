@@ -3,6 +3,13 @@
 This changelog is used to track all major changes to django_apscheduler.
 
 
+## v0.4.3 (UNRELEASED)
+
+**Fixes**
+
+- Don't try to log job executions for jobs that are no longer available in the job store (Fixes [#116](https://github.com/jarekwg/django-apscheduler/issues/116)).
+
+
 ## v0.4.2 (2020-08-11)
 
 **Fixes**
