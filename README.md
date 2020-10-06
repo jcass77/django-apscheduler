@@ -26,6 +26,12 @@ Features of this package include:
     
 - You can view the scheduled jobs and monitor the job execution directly via the Django admin interface.
 
+- Job executions can also be triggered manually via the DjangoJob admin page. In order to prevent long running jobs from
+  causing the Django request to time out, the combined maximum run time for all APScheduler jobs started in this way is
+  15 seconds. This timeout value can be configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
+
+  ![Jobs](docs/screenshots/run_now.png)
+
 Installation
 ------------
 

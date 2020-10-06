@@ -1,9 +1,13 @@
 from datetime import timedelta
+from unittest import mock
 
 import pytest
+from apscheduler.schedulers.background import BackgroundScheduler
+from django.contrib.messages.storage.base import BaseStorage
 from django.utils import timezone
 
 from django_apscheduler.admin import DjangoJobAdmin, DjangoJobExecutionAdmin
+from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 
 
@@ -79,7 +83,7 @@ class TestDjangoJobAdmin:
         assert admin.average_duration(job) == 7.5
 
     @pytest.mark.django_db
-    def test_average_duration_no_executions_shows_none_text(self, request):
+    def test_average_duration_no_executions_shows_none_text(self, request, rf):
         now = timezone.now()
         run_time = now - timedelta(seconds=60)
 
@@ -87,9 +91,90 @@ class TestDjangoJobAdmin:
         request.addfinalizer(job.delete)
 
         admin = DjangoJobAdmin(DjangoJob, None)
-        admin.get_queryset(request)
+        r = rf.get("/django_apscheduler/djangojob/")
+        admin.get_queryset(r)
 
         assert admin.average_duration(job) == "None"
+
+    @pytest.mark.django_db(transaction=True)
+    def test_run_selected_jobs_creates_job_execution_entry(self, rf):
+        scheduler = BackgroundScheduler()
+        scheduler.add_jobstore(DjangoJobStore())
+        scheduler.start()
+
+        job = scheduler.add_job(print, trigger="interval", seconds=60)
+
+        admin = DjangoJobAdmin(DjangoJob, None)
+
+        r = rf.get("/django_apscheduler/djangojob/")
+        # Add support for Django messaging framework
+        r._messages = mock.MagicMock(BaseStorage)
+        r._messages.add = mock.MagicMock()
+
+        assert not DjangoJobExecution.objects.filter(job_id=job.id).exists()
+
+        admin.run_selected_jobs(r, DjangoJob.objects.filter(id=job.id))
+
+        assert DjangoJobExecution.objects.filter(job_id=job.id).exists()
+        r._messages.add.assert_called_with(20, f"Executed job '{job.id}'!", "")
+
+        scheduler.shutdown()
+
+    @pytest.mark.django_db(transaction=True)
+    def test_run_selected_jobs_job_not_found_skips_execution(self, rf):
+        scheduler = BackgroundScheduler()
+        scheduler.add_jobstore(DjangoJobStore())
+        scheduler.start()
+
+        job = DjangoJob.objects.create(id="test_job")
+
+        admin = DjangoJobAdmin(DjangoJob, None)
+
+        r = rf.get("/django_apscheduler/djangojob/")
+        # Add support for Django messaging framework
+        r._messages = mock.MagicMock(BaseStorage)
+        r._messages.add = mock.MagicMock()
+
+        admin.run_selected_jobs(r, DjangoJob.objects.filter(id=job.id))
+
+        assert DjangoJobExecution.objects.count() == 0
+        r._messages.add.assert_called_with(
+            30, "Could not find job test_job in the database! Skipping execution...", ""
+        )
+
+        scheduler.shutdown()
+
+    @pytest.mark.django_db(transaction=True)
+    def test_run_selected_jobs_enforces_timeout(self, rf, settings):
+
+        settings.APSCHEDULER_RUN_NOW_TIMEOUT = (
+            1  # Shorten timeout to reduce test runtime
+        )
+
+        scheduler = BackgroundScheduler()
+        scheduler.add_jobstore(DjangoJobStore())
+        scheduler.start()
+
+        job = scheduler.add_job(print, trigger="interval", seconds=60)
+
+        admin = DjangoJobAdmin(DjangoJob, None)
+
+        r = rf.get("/django_apscheduler/djangojob/")
+        # Add support for Django messaging framework
+        r._messages = mock.MagicMock(BaseStorage)
+        r._messages.add = mock.MagicMock()
+
+        with mock.patch("django_apscheduler.admin.BackgroundScheduler.add_listener"):
+            admin.run_selected_jobs(r, DjangoJob.objects.filter(id=job.id))
+
+        assert DjangoJobExecution.objects.count() == 0
+        r._messages.add.assert_called_with(
+            40,
+            "Maximum runtime exceeded! Not all jobs could be completed successfully.",
+            "",
+        )
+
+        scheduler.shutdown()
 
 
 class TestDjangoJobExecutionAdmin:

@@ -1,22 +1,36 @@
-from time import sleep
+import time
+from datetime import timedelta
 
-
+from apscheduler import events
 from apscheduler.schedulers.background import BackgroundScheduler
-from django.contrib import admin
+from django.conf import settings
+from django.contrib import admin, messages
 from django.db.models import Avg
 from django.utils import timezone
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-
+from django.utils.translation import gettext as _
 
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler import util
-from django_apscheduler.jobstores import DjangoJobStore
+from django_apscheduler.jobstores import DjangoJobStore, DjangoMemoryJobStore
 
 
 @admin.register(DjangoJob)
 class DjangoJobAdmin(admin.ModelAdmin):
     search_fields = ["id"]
     list_display = ["id", "local_run_time", "average_duration"]
+
+    def __init__(self, model, admin_site):
+        super().__init__(model, admin_site)
+
+        self._django_jobstore = DjangoJobStore()
+        self._memory_jobstore = DjangoMemoryJobStore()
+
+        self._jobs_executed = []
+        self._job_execution_timeout = getattr(
+            settings, "APSCHEDULER_RUN_NOW_TIMEOUT", 15
+        )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -46,19 +60,73 @@ class DjangoJobAdmin(admin.ModelAdmin):
 
     average_duration.short_description = "Average Duration (sec)"
 
-    actions = ['run_selected_jobs']
+    actions = ["run_selected_jobs"]
 
     def run_selected_jobs(self, request, queryset):
         scheduler = BackgroundScheduler()
-        scheduler.add_jobstore(DjangoJobStore(), "default")
+        scheduler.add_jobstore(self._memory_jobstore)
+        scheduler.add_listener(self._handle_execution_event, events.EVENT_JOB_EXECUTED)
+
         scheduler.start()
+
+        num_jobs_scheduled = 0
+        self._jobs_executed = []
+        start_time = timezone.now()
+
         for item in queryset:
-            job = scheduler.get_job(item.id, "default")
-            if job:
-                scheduler.modify_job(job.id, "default", next_run_time=timezone.now())
-        sleep(0.1)
+            django_job = self._django_jobstore.lookup_job(item.id)
+
+            if not django_job:
+                msg_dict = {"job_id": item.id}
+                msg = _(
+                    "Could not find job {job_id} in the database! Skipping execution..."
+                )
+                self.message_user(
+                    request, format_html(msg, **msg_dict), messages.WARNING
+                )
+                continue
+
+            scheduler.add_job(
+                django_job.func_ref,
+                trigger=None,  # Run immediately
+                args=django_job.args,
+                kwargs=django_job.kwargs,
+                id=django_job.id,
+                name=django_job.name,
+                misfire_grace_time=django_job.misfire_grace_time,
+                coalesce=django_job.coalesce,
+                max_instances=django_job.max_instances,
+            )
+
+            num_jobs_scheduled += 1
+
+        while len(self._jobs_executed) < num_jobs_scheduled:
+            # Wait for selected jobs to be executed.
+            if timezone.now() > start_time + timedelta(
+                seconds=self._job_execution_timeout
+            ):
+                msg = _(
+                    "Maximum runtime exceeded! Not all jobs could be completed successfully."
+                )
+                self.message_user(request, msg, messages.ERROR)
+
+                scheduler.shutdown(wait=False)
+                return None
+
+            time.sleep(0.1)
+
+        for job_id in self._jobs_executed:
+            msg_dict = {"job_id": job_id}
+            msg = _("Executed job '{job_id}'!")
+            self.message_user(request, format_html(msg, **msg_dict))
+
         scheduler.shutdown()
-    run_selected_jobs.short_description = "Run the selected django jobs"
+        return None
+
+    def _handle_execution_event(self, event: events.JobExecutionEvent):
+        self._jobs_executed.append(event.job_id)
+
+    run_selected_jobs.short_description = "Run the selected Django jobs"
 
 
 @admin.register(DjangoJobExecution)

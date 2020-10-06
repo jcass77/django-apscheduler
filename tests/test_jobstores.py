@@ -67,7 +67,7 @@ class TestDjangoResultStoreMixin:
 
     @pytest.mark.django_db(transaction=True)
     def test_handle_execution_event_for_job_that_no_longer_exists_does_not_raise_exception_regression_116(
-            self, jobstore
+        self, jobstore
     ):
         # Test for regression https://github.com/jarekwg/django-apscheduler/issues/116
         event = JobExecutionEvent(
