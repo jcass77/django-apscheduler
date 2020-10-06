@@ -7,6 +7,7 @@ from apscheduler import events
 from apscheduler.events import JobSubmissionEvent, JobExecutionEvent
 from apscheduler.job import Job as AppSchedulerJob
 from apscheduler.jobstores.base import BaseJobStore, JobLookupError, ConflictingIdError
+from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.base import BaseScheduler
 
 from django import db
@@ -286,6 +287,15 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(pickle_protocol={self.pickle_protocol})>"
+
+
+class DjangoMemoryJobStore(DjangoResultStoreMixin, MemoryJobStore):
+    """
+    Adds the DjangoResultStoreMixin to the standard MemoryJobStore so that job executions can be
+    logged to the Django database.
+    """
+
+    pass
 
 
 def register_events(scheduler, result_storage=None):

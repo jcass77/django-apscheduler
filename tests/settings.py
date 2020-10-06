@@ -16,3 +16,6 @@ DATABASES = {
         "NAME": "db",
     },
 }
+
+APSCHEDULER_RUN_NOW_TIMEOUT = 15
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"

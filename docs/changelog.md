@@ -3,7 +3,11 @@
 This changelog is used to track all major changes to django_apscheduler.
 
 
-## v0.4.3 (UNRELEASED)
+## v0.5.0 (UNRELEASED)
+
+**Enhancements**
+
+- Add ability to trigger a scheduled job manually from the `DjangoJobAdmin` page (Resolves [#102](https://github.com/jarekwg/django-apscheduler/issues/102)).
 
 **Fixes**
 
