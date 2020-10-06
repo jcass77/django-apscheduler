@@ -74,12 +74,12 @@ class DjangoResultStoreMixin:
         return job_execution.id
 
     @classmethod
-    def handle_execution_event(cls, event: JobExecutionEvent) -> int:
+    def handle_execution_event(cls, event: JobExecutionEvent) -> Union[int, None]:
         """
         Store "successful" job execution status in the database.
 
         :param event: JobExecutionEvent instance
-        :return: DjangoJobExecution ID
+        :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
         if event.code != events.EVENT_JOB_EXECUTED:
             raise NotImplementedError(
@@ -87,9 +87,19 @@ class DjangoResultStoreMixin:
                 f"'{events.EVENT_JOB_EXECUTED}'."
             )
 
-        job_execution = DjangoJobExecution.atomic_update_or_create(
-            cls.lock, event.job_id, event.scheduled_run_time, DjangoJobExecution.SUCCESS
-        )
+        try:
+            job_execution = DjangoJobExecution.atomic_update_or_create(
+                cls.lock,
+                event.job_id,
+                event.scheduled_run_time,
+                DjangoJobExecution.SUCCESS,
+            )
+        except IntegrityError:
+            logger.warning(
+                f"Job '{event.job_id}' no longer exists! Skipping logging of job execution..."
+            )
+            return None
+
         return job_execution.id
 
     @classmethod
