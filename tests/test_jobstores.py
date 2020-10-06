@@ -65,6 +65,18 @@ class TestDjangoResultStoreMixin:
 
         assert DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
 
+    @pytest.mark.django_db(transaction=True)
+    def test_handle_execution_event_for_job_that_no_longer_exists_does_not_raise_exception_regression_116(
+            self, jobstore
+    ):
+        # Test for regression https://github.com/jarekwg/django-apscheduler/issues/116
+        event = JobExecutionEvent(
+            events.EVENT_JOB_EXECUTED, "finished_job", jobstore, timezone.now()
+        )
+        jobstore.handle_execution_event(event)
+
+        assert not DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
+
     @pytest.mark.django_db
     def test_handle_error_event_not_supported_raises_exception(self, jobstore):
         event = JobExecutionEvent(

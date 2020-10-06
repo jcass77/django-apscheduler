@@ -91,7 +91,7 @@ class Command(BaseCommand):
         scheduler.add_job(
             my_job,
             trigger=CronTrigger(second="*/10"),  # Every 10 seconds
-            id="my_job",
+            id="my_job",  # The `id` assigned to each job MUST be unique
             max_instances=1,
             replace_existing=True,
         )
@@ -127,19 +127,11 @@ class Command(BaseCommand):
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-- The `id` assigned to each job **must be unique**. For example:
+- django-apscheduler also provides a custom `@register_job` decorator for job registration. This is similar to
+  APScheduler's `@scheduler.scheduled_job`, except that it automatically assigns a unique job `id` based on the Python
+  module and function name:
 ```python
-@scheduler.scheduled_job("interval", seconds=60, id="job")
-def job():
-    pass
-```
-
-- You can also use the custom `@register_job` decorator for job registration. This will assign a unique `id`
-  based on the Python module and function name automatically:
-```python
-from django_apscheduler.jobstores import register_job
-
-@register_job("interval", seconds=60)
+@register_job(scheduler, "interval", seconds=60)
 def job():
     pass
 ```
