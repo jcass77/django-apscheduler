@@ -126,7 +126,7 @@ class DjangoJobAdmin(admin.ModelAdmin):
     def _handle_execution_event(self, event: events.JobExecutionEvent):
         self._jobs_executed.append(event.job_id)
 
-    run_selected_jobs.short_description = "Run the selected Django jobs"
+    run_selected_jobs.short_description = "Run the selected django jobs"
 
 
 @admin.register(DjangoJobExecution)
