@@ -8,7 +8,7 @@ This changelog is used to track all major changes to django_apscheduler.
 **Enhancements**
 
 - Add ability to trigger a scheduled job manually from the `DjangoJobAdmin` page (Resolves [#102](https://github.com/jarekwg/django-apscheduler/issues/102)).
-- The @register_job decorator has been deprecated. Please use APScheduler's add_job() method or @scheduled_job
+- The `@register_job` decorator has been deprecated. Please use APScheduler's `add_job()` method or `@scheduled_job`
   decorator instead (Resolves [#119](https://github.com/jarekwg/django-apscheduler/pull/119)).
 
 **Fixes**
