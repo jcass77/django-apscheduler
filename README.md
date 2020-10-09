@@ -133,15 +133,6 @@ class Command(BaseCommand):
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-- django-apscheduler also provides a custom `@register_job` decorator for job registration. This is similar to
-  APScheduler's `@scheduler.scheduled_job`, except that it automatically assigns a unique job `id` based on the Python
-  module and function name:
-```python
-@register_job(scheduler, "interval", seconds=60)
-def job():
-    pass
-```
-
 - All of the jobs that have been scheduled are viewable directly in the Django admin interface.
 
 - django_apscheduler will create a log of all job executions and their associated APScheduler status that can also be

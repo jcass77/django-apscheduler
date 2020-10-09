@@ -157,3 +157,14 @@ def test_register_job(scheduler, jobstore):
     scheduler.start()
 
     assert DjangoJob.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_register_job_raises_deprecation_warning(scheduler, jobstore):
+
+    with warnings.catch_warnings(record=True) as w:
+
+        register_job(scheduler, "interval", seconds=1)(dummy_job)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated" in str(w[-1].message)

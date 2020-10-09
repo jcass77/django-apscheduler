@@ -299,7 +299,7 @@ class DjangoMemoryJobStore(DjangoResultStoreMixin, MemoryJobStore):
 
 
 def register_events(scheduler, result_storage=None):
-    # TODO: Remove this deprecated function in release 0.5
+    # TODO: Remove this deprecated function in release 1.0
     # DjangoResultStoreMixin now takes care of registering event listeners automatically when the scheduler is started.
     warnings.warn(
         "'register_events' is deprecated since version 0.4.0. Please remove all references from your code.",
@@ -326,6 +326,13 @@ def register_job(scheduler: BaseScheduler, *args, **kwargs) -> callable:
     """
 
     def wrapper_register_job(func):
+        # TODO: Remove this deprecated function in release 1.0
+        warnings.warn(
+            "The 'register_job' decorator is deprecated since version 0.5.0. Please use APScheduler's add_job() method "
+            "or @scheduled_job decorator instead.",
+            DeprecationWarning,
+        )
+
         kwargs.setdefault("id", f"{func.__module__}.{func.__name__}")
         scheduler.add_job(func, *args, **kwargs)
 
