@@ -133,11 +133,9 @@ class Command(BaseCommand):
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-- django-apscheduler also provides a custom `@register_job` decorator for job registration. This is similar to
-  APScheduler's `@scheduler.scheduled_job`, except that it automatically assigns a unique job `id` based on the Python
-  module and function name:
+- One can also use APScheduler's decorator version of [`add_job()`](https://apscheduler.readthedocs.io/en/latest/modules/schedulers/base.html#apscheduler.schedulers.base.BaseScheduler.add_job"apscheduler.schedulers.base.BaseScheduler.add_job") - [`@scheduler.scheduled_job`](https://apscheduler.readthedocs.io/en/latest/modules/schedulers/base.html#apscheduler.schedulers.base.BaseScheduler.scheduled_job) to register a job,e.g. 
 ```python
-@register_job(scheduler, "interval", seconds=60)
+@scheduler.scheduled_job("cron", hour=5, minute=0, second=10, max_instances=1, id='YourJobId')# run at 5：99：10 everyday
 def job():
     pass
 ```
