@@ -25,15 +25,17 @@ Features of this package include:
   
   ![Jobs](docs/screenshots/execution_overview.png)
   
-- **Note** that APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
+- **Note:** APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
   that are not scheduled to trigger again from the job store. This will also delete the corresponding job execution
   entries for that job from the database (i.e. job execution logs are only maintained for 'active' jobs.)
     
-- Job executions can also be triggered manually via the DjangoJob admin page. In order to prevent long running jobs from
-  causing the Django request to time out, the combined maximum run time for all APScheduler jobs started in this way is
-  15 seconds. This timeout value can be configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
+- Job executions can also be triggered manually via the DjangoJob admin page:
 
   ![Jobs](docs/screenshots/run_now.png)
+  
+- **Note:** In order to prevent long running jobs from causing the Django request to time out, the combined maximum run
+  time for all APScheduler jobs started in this way is 15 seconds. This timeout value can be configured via the 
+  `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
 
 Installation
 ------------
