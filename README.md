@@ -15,17 +15,20 @@ This is a Django app that adds a lightweight wrapper around APScheduler. It enab
 Features of this package include:
 
 - A custom `DjangoJobStore`: an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
-  that persists scheduled jobs to the Django database.
+  that persists scheduled jobs to the Django database. You can view the scheduled jobs and monitor the job execution
+  directly via the Django admin interface:
   
   ![Jobs](docs/screenshots/job_overview.png)
   
-- The job store also maintains a history of all executions of the currently scheduled jobs, along with status codes and
-  exceptions (if any).  
+- The job store also maintains a history of all job executions of the currently scheduled jobs, along with status codes
+  and exceptions (if any):
   
   ![Jobs](docs/screenshots/execution_overview.png)
+  
+- **Note** that APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
+  that are not scheduled to trigger again from the job store. This will also delete the corresponding job execution
+  entries for that job from the database (i.e. job execution logs are only maintained for 'active' jobs.)
     
-- You can view the scheduled jobs and monitor the job execution directly via the Django admin interface.
-
 - Job executions can also be triggered manually via the DjangoJob admin page. In order to prevent long running jobs from
   causing the Django request to time out, the combined maximum run time for all APScheduler jobs started in this way is
   15 seconds. This timeout value can be configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
@@ -133,14 +136,6 @@ class Command(BaseCommand):
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job` calls.
 
-- All of the jobs that have been scheduled are viewable directly in the Django admin interface.
-
-- django_apscheduler will create a log of all job executions and their associated APScheduler status that can also be
-  viewed via the Django admin interface.
-  
-- **Note** that APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
-  that are not scheduled to trigger again from the job store. This will also delete the corresponding job execution
-  entries for that job from the database (i.e. job execution logs are only maintained for 'active' jobs.)
 
 Caveats
 -------

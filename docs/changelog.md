@@ -1,6 +1,6 @@
 # Changelog
 
-This changelog is used to track all major changes to django_apscheduler.
+This changelog is used to track all major changes to django-apscheduler.
 
 
 ## v0.5.0 (UNRELEASED)
