@@ -56,7 +56,7 @@ INSTALLED_APPS = (
 ```
 
 - django-apscheduler comes with sensible configuration defaults out of the box. The defaults can be overridden by adding
-  the following settings to your Django settings file:
+  the following settings to your Django `settings.py` file:
 ```python
 # Format string for displaying run time timestamps in the Django admin site. The default
 # just adds seconds to the standard Django format, which is useful for displaying the timestamps
@@ -70,8 +70,8 @@ APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 # prevents admin site HTTP requests from timing out.
 # 
 # Longer running jobs should probably be handed over to a background task processing library
-# like Dramatiq (https://dramatiq.io) or Celery (https://docs.celeryproject.org/en/stable/django/)
-# instead.
+# that supports multiple background worker processes instead (e.g. Dramatiq, Celery, Django-RQ,
+# etc. See: https://djangopackages.org/grids/g/workers-queues-tasks/ for popular options).
 APSCHEDULER_RUN_NOW_TIMEOUT = 15  # Seconds
 ```
 
