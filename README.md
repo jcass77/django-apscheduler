@@ -67,8 +67,10 @@ INSTALLED_APPS = (
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 
 # Maximum run time allowed for jobs that are triggered manually via the Django admin site, which
-# prevents admin site HTTP requests from timing out. Longer running jobs should probably
-# be handed over to a background task processing library like Dramatiq (https://dramatiq.io)
+# prevents admin site HTTP requests from timing out.
+# 
+# Longer running jobs should probably be handed over to a background task processing library
+# like Dramatiq (https://dramatiq.io) or Celery (https://docs.celeryproject.org/en/stable/django/)
 # instead.
 APSCHEDULER_RUN_NOW_TIMEOUT = 15  # Seconds
 ```
