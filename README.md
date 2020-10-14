@@ -34,8 +34,8 @@ Features of this package include:
   ![Jobs](docs/screenshots/run_now.png)
   
 - **Note:** In order to prevent long running jobs from causing the Django HTTP request to time out, the combined maximum
-  run time for all APScheduler jobs that are started in this way is 15 seconds. This timeout value can be configured via
-  the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
+  run time for all APScheduler jobs that are started via the Django admin site is 15 seconds. This timeout value can be
+  configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
 
 Installation
 ------------
