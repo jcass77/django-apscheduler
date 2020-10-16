@@ -10,8 +10,38 @@ Django APScheduler
 
 [APScheduler](https://github.com/agronholm/apscheduler) for [Django](https://github.com/django/django).
 
-This is a Django app that adds a lightweight wrapper around APScheduler. It enables storing persistent jobs in the database using Django's ORM.
+This is a Django app that adds a lightweight wrapper around APScheduler. It enables storing persistent jobs in the
+database using Django's ORM.
 
+django-apscheduler is a great choice for quickly and easily adding basic scheduling features to your Django applications
+with minimal dependencies and very little additional configuration. The ideal use case probably involves running a
+handful of tasks on a fixed execution schedule.
+
+The tradeoff of this simplicity is that you need to **be careful to ensure that you only have ***one*** scheduler
+actively running at a particular point in time**.
+
+This limitation stems from the fact that APScheduler does not currently have any [interprocess synchronization and
+signalling scheme](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes) 
+that would enable the scheduler to be notified when a job has been added, modified, or removed from a job store. A
+typical Django [deployment in production](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django)
+will start up more than one worker process, and if each worker process ends up running its own scheduler then this could
+result in jobs being missed or executed multiple times, as well as duplicate entries in the `DjangoJobExecution` tables
+being created.
+
+So your best options are to either:
+
+1. Use a custom Django management command to start a single scheduler in its own dedicated process (**recommended** -
+   see the `runapscheduler.py` example below); or
+ 
+2. Implement your own [remote processing](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
+   logic to ensure that a single `DjangoJobStore` can be used by all of the web server's worker processes in a
+   coordinated and synchronized way (might not be worth the extra effort and increased complexity for most use cases);
+   or
+  
+3. Select an alternative task processing library that *does* support inter-process communication using some sort of
+   shared message broker like Redis, RabbitMQ, Amazon SQS or the like (see: 
+   https://djangopackages.org/grids/g/workers-queues-tasks/ for popular options).
+  
 Features of this package include:
 
 - A custom `DjangoJobStore`: an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
@@ -152,26 +182,18 @@ class Command(BaseCommand):
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job()` calls.
 
 
-Caveats
--------
+Advanced Usage
+--------------
 
 django-apscheduler assumes that you are already familiar with APScheduler and its proper use. If not, then please head
 over to the project page and have a look through the [APScheduler documentation](https://apscheduler.readthedocs.io/en/latest/index.html).
 
-Most importantly: **your choice of scheduler [matters](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)**.
-If you would prefer running a `BackgroundScheduler` directly in your Django application so that you can add and remove
-jobs dynamically at runtime, instead of using a `BlockingScheduler` in a separate Django management command on a fixed
-execution schedule as outlined above, then you should be aware of the following potential issues and limitations that
-are imposed by APScheduler:
-
-- Using APScheduler with uWSGI requires some additional [configuration steps](https://apscheduler.readthedocs.io/en/latest/faq.html#how-can-i-use-apscheduler-with-uwsgi)
-  in order to re-enable threading support.
+It is possible to make use of [different types of schedulers](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)
+depending on your environment and use case. If you would prefer running a `BackgroundScheduler` instead of using a
+`BlockingScheduler`, then you should be aware that using APScheduler with uWSGI requires some additional
+[configuration steps](https://apscheduler.readthedocs.io/en/latest/faq.html#how-can-i-use-apscheduler-with-uwsgi) in
+order to re-enable threading support.
   
-- If you intend to run more than one worker process as part of your [Django deployment in production](https://docs.djangoproject.com/en/3.0/howto/deployment/#deploying-django),
-  then it is likely that you will have to [implement your own remote processing](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
-  logic to ensure that a single `DjangoJobStore` can be used by all of the worker processes in a coordinated and
-  synchronized way. Neglecting this step could result in jobs being missed or executed multiple times, as well as
-  duplicate entries in the `DjangoJobExecution` tables being created.
   
 ## Project resources
 
