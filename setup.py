@@ -14,8 +14,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="http://github.com/jarekwg/django-apscheduler",
-    author="Jarek Glowacki, Stas Kaledin",
-    author_email="jarekwg@gmail.com, staskaledin@gmail.com",
+    author="Jarek Glowacki, Stas Kaledin, John Cass",
+    author_email="jarekwg@gmail.com, staskaledin@gmail.com, john.cass77@gmail.com",
     license="MIT",
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -35,6 +35,6 @@ setup(
     ],
     keywords="django apscheduler django-apscheduler",
     packages=find_packages(exclude=("tests",)),
-    install_requires=["django>=2.2", "apscheduler>=3.2",],
+    install_requires=["django>=2.2", "apscheduler>=3.2,<4.0", ],
     zip_safe=False,
 )

@@ -22,13 +22,15 @@ actively running at a particular point in time**.
 
 This limitation stems from the fact that APScheduler does not currently have any [interprocess synchronization and
 signalling scheme](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes) 
-that would enable the scheduler to be notified when a job has been added, modified, or removed from a job store. A
-typical Django [deployment in production](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django)
-will start up more than one worker process, and if each worker process ends up running its own scheduler then this could
-result in jobs being missed or executed multiple times, as well as duplicate entries in the `DjangoJobExecution` tables
-being created.
+that would enable the scheduler to be notified when a job has been added, modified, or removed from a job store.
+ 
+Support for persistent job store sharing among multiple schedulers appears to be planned for an [upcoming APScheduler
+4.0 release](https://github.com/agronholm/apscheduler/issues/465). Until then, a typical Django [deployment in
+production](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django) will start up more than one
+worker process, and if each worker process ends up running its own scheduler then this could result in jobs being
+missed or executed multiple times, as well as duplicate entries in the `DjangoJobExecution` tables being created.
 
-So your best options are to either:
+So for now your options are to either:
 
 1. Use a custom Django management command to start a single scheduler in its own dedicated process (**recommended** -
    see the `runapscheduler.py` example below); or
@@ -64,7 +66,7 @@ Features of this package include:
   ![Jobs](docs/screenshots/run_now.png)
   
 - **Note:** In order to prevent long running jobs from causing the Django HTTP request to time out, the combined maximum
-  run time for all APScheduler jobs that are started via the Django admin site is 15 seconds. This timeout value can be
+  run time for all APScheduler jobs that are started via the Django admin site is 25 seconds. This timeout value can be
   configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
 
 Installation
@@ -102,7 +104,7 @@ APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 # Longer running jobs should probably be handed over to a background task processing library
 # that supports multiple background worker processes instead (e.g. Dramatiq, Celery, Django-RQ,
 # etc. See: https://djangopackages.org/grids/g/workers-queues-tasks/ for popular options).
-APSCHEDULER_RUN_NOW_TIMEOUT = 15  # Seconds
+APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds
 ```
 
 - Run `python manage.py migrate` to create the django_apscheduler models.
