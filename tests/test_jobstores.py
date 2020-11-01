@@ -33,16 +33,27 @@ class TestDjangoResultStoreMixin:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
-        "event_code", [events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES,],
+        "event_code", [events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES, ],
     )
     def test_handle_submission_event_creates_job_execution(
-        self, event_code, jobstore, create_add_job
+            self, event_code, jobstore, create_add_job
     ):
         job = create_add_job(jobstore, dummy_job, datetime(2016, 5, 3))
         event = JobSubmissionEvent(event_code, job.id, jobstore, [timezone.now()])
         jobstore.handle_submission_event(event)
 
         assert DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
+
+    @pytest.mark.django_db(transaction=True)
+    def test_handle_submission_event_for_job_that_no_longer_exists_does_not_raise_exception(
+            self, jobstore
+    ):
+        event = JobSubmissionEvent(
+            events.EVENT_JOB_SUBMITTED, "finished_job", jobstore, [timezone.now()]
+        )
+        jobstore.handle_submission_event(event)
+
+        assert not DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
 
     @pytest.mark.django_db
     def test_handle_execution_event_not_supported_raises_exception(self, jobstore):
@@ -112,6 +123,17 @@ class TestDjangoResultStoreMixin:
         ex = DjangoJobExecution.objects.get(job_id=event.job_id)
 
         assert "raised an error!" in ex.exception
+
+    @pytest.mark.django_db(transaction=True)
+    def test_handle_error_event_for_job_that_no_longer_exists_does_not_raise_exception(
+            self, jobstore
+    ):
+        event = JobExecutionEvent(
+            events.EVENT_JOB_ERROR, "finished_job", jobstore, timezone.now()
+        )
+        jobstore.handle_error_event(event)
+
+        assert not DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
 
     @pytest.mark.django_db
     def test_register_event_listeners_registers_listeners(self, jobstore):

@@ -10,6 +10,10 @@ This changelog is used to track all major changes to django-apscheduler.
 - Update readme to clarify the need for ensuring that a single scheduler is run in your Django application until
   APScheduler 4.0 arrives and django-apscheduler is migrated to make use of that version.
 - Update authors section in `setup.py`.
+- Don't try to log job executions for jobs that are no longer available in the job store. This was partially fixed
+  previously as part of [#116](https://github.com/jarekwg/django-apscheduler/issues/116), which only catered for
+  'execution' type of events. This fix resolves the issue for the remaining 'submitted' and 'error' events as well
+  (Fixes [#121](https://github.com/jarekwg/django-apscheduler/issues/121)).
 
 
 ## v0.5.0 (2020-10-13)
