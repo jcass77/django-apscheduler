@@ -41,36 +41,43 @@ class DjangoResultStoreMixin:
         Create and return new job execution instance in the database when the job is submitted to the scheduler.
 
         :param event: JobExecutionEvent instance
-        :return: DjangoJobExecution ID
+        :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
-        if event.code == events.EVENT_JOB_SUBMITTED:
-            # Start logging a new job execution
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_times[0],
-                DjangoJobExecution.SENT,
-            )
-        elif event.code == events.EVENT_JOB_MAX_INSTANCES:
-            status = DjangoJobExecution.MAX_INSTANCES
+        try:
+            if event.code == events.EVENT_JOB_SUBMITTED:
+                # Start logging a new job execution
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_times[0],
+                    DjangoJobExecution.SENT,
+                )
 
-            exception = (
-                f"Execution of job '{event.job_id}' skipped: maximum number of running "
-                f"instances reached!"
-            )
+            elif event.code == events.EVENT_JOB_MAX_INSTANCES:
+                status = DjangoJobExecution.MAX_INSTANCES
 
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_times[0],
-                status,
-                exception=exception,
+                exception = (
+                    f"Execution of job '{event.job_id}' skipped: maximum number of running "
+                    f"instances reached!"
+                )
+
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_times[0],
+                    status,
+                    exception=exception,
+                )
+            else:
+                raise NotImplementedError(
+                    f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
+                    f"one of '{[events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES]}'."
+                )
+        except IntegrityError:
+            logger.warning(
+                f"Job '{event.job_id}' no longer exists! Skipping logging of job execution..."
             )
-        else:
-            raise NotImplementedError(
-                f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
-                f"one of '{[events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES]}'."
-            )
+            return None
 
         return job_execution.id
 
@@ -104,49 +111,55 @@ class DjangoResultStoreMixin:
         return job_execution.id
 
     @classmethod
-    def handle_error_event(cls, event: JobExecutionEvent) -> int:
+    def handle_error_event(cls, event: JobExecutionEvent) -> Union[int, None]:
         """
         Store "failed" job execution status in the database.
 
         :param event: JobExecutionEvent instance
-        :return: DjangoJobExecution ID
+        :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
-        if event.code == events.EVENT_JOB_ERROR:
+        try:
+            if event.code == events.EVENT_JOB_ERROR:
 
-            if event.exception:
-                exception = str(event.exception)
-                traceback = str(event.traceback)
+                if event.exception:
+                    exception = str(event.exception)
+                    traceback = str(event.traceback)
+                else:
+                    exception = f"Job '{event.job_id}' raised an error!"
+                    traceback = None
+
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_time,
+                    DjangoJobExecution.ERROR,
+                    exception=exception,
+                    traceback=traceback,
+                )
+
+            elif event.code == events.EVENT_JOB_MISSED:
+                # Job execution will not have been logged yet - do so now
+                status = DjangoJobExecution.MISSED
+                exception = f"Run time of job '{event.job_id}' was missed!"
+
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_time,
+                    status,
+                    exception=exception,
+                )
+
             else:
-                exception = f"Job '{event.job_id}' raised an error!"
-                traceback = None
-
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_time,
-                DjangoJobExecution.ERROR,
-                exception=exception,
-                traceback=traceback,
+                raise NotImplementedError(
+                    f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
+                    f"one of '{[events.EVENT_JOB_ERROR, events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]}'."
+                )
+        except IntegrityError:
+            logger.warning(
+                f"Job '{event.job_id}' no longer exists! Skipping logging of job execution..."
             )
-
-        elif event.code == events.EVENT_JOB_MISSED:
-            # Job execution will not have been logged yet - do so now
-            status = DjangoJobExecution.MISSED
-            exception = f"Run time of job '{event.job_id}' was missed!"
-
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_time,
-                status,
-                exception=exception,
-            )
-
-        else:
-            raise NotImplementedError(
-                f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
-                f"one of '{[events.EVENT_JOB_ERROR, events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]}'."
-            )
+            return None
 
         return job_execution.id
 
