@@ -141,7 +141,7 @@ class DjangoJobExecution(models.Model):
         :return: The ID of the newly created or updated DjangoJobExecution.
         """
 
-        # Ensure that only one update / created can be processed at a time, staying in sync with corresponding
+        # Ensure that only one update / create can be processed at a time, staying in sync with corresponding
         # scheduler.
         with lock:
             # Convert all datetimes to internal Django format before doing calculations and persisting in the database.
