@@ -2,11 +2,18 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
+## v0.5.2 (UNRELEASED)
+
+**Enhancements**
+
+- Include Python 3.9 in continuous integration runs.
+
 ## v0.5.1 (2020-11-06)
 
 **Fixes**
 
-- Pin dependency to APScheduler < 4.0, which appears to be introducing some [backwards incompatible changes](https://github.com/agronholm/apscheduler/issues/465).
+- Pin dependency to APScheduler < 4.0, which appears to be introducing
+  some [backwards incompatible changes](https://github.com/agronholm/apscheduler/issues/465).
 - Update readme to clarify the need for ensuring that a single scheduler is run in your Django application until
   APScheduler 4.0 arrives and django-apscheduler is migrated to make use of that version.
 - Update authors section in `setup.py`.
