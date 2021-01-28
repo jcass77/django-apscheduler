@@ -80,7 +80,7 @@ class TestDjangoResultStoreMixin:
     def test_handle_execution_event_for_job_that_no_longer_exists_does_not_raise_exception_regression_116(
         self, jobstore
     ):
-        # Test for regression https://github.com/jarekwg/django-apscheduler/issues/116
+        # Test for regression https://github.com/jcass77/django-apscheduler/issues/116
         event = JobExecutionEvent(
             events.EVENT_JOB_EXECUTED, "finished_job", jobstore, timezone.now()
         )

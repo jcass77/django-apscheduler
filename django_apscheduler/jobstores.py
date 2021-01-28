@@ -326,7 +326,7 @@ def register_job(scheduler: BaseScheduler, *args, **kwargs) -> callable:
     Helper decorator for job registration.
 
     Automatically fills id parameter to prevent jobs duplication.
-    See this comment for explanation: https://github.com/jarekwg/django-apscheduler/pull/9#issuecomment-342074372
+    See this comment for explanation: https://github.com/jcass77/django-apscheduler/pull/9#issuecomment-342074372
 
     Usage example::
 

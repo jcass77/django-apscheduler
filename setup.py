@@ -13,7 +13,7 @@ setup(
     description="APScheduler for Django",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="http://github.com/jarekwg/django-apscheduler",
+    url="http://github.com/jcass77/django-apscheduler",
     author="Jarek Glowacki, Stas Kaledin, John Cass",
     author_email="jarekwg@gmail.com, staskaledin@gmail.com, john.cass77@gmail.com",
     license="MIT",

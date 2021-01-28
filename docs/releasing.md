@@ -12,7 +12,7 @@ key individuals, and as a stepping stone to more automation.
 
 3. Push to GitHub.
 
-4. Create a new release on GitHub: https://github.com/jarekwg/django-apscheduler/releases/new
+4. Create a new release on GitHub: https://github.com/jcass77/django-apscheduler/releases/new
 
-    - Set both tag version and release title to the semantic version number (e.g. "0.4.1") 
-    - Clicking "Publish" will automatically trigger a new release to get pushed to PyPi.
+   - Set both tag version and release title to the semantic version number (e.g. "0.4.1")
+   - Clicking "Publish" will automatically trigger a new release to get pushed to PyPi.

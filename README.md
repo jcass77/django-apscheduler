@@ -4,8 +4,8 @@ Django APScheduler
 [![PyPI version](https://badge.fury.io/py/django-apscheduler.svg)](https://badge.fury.io/py/django-apscheduler)
 [![versions](https://img.shields.io/pypi/pyversions/django-apscheduler.svg)](https://pypi.org/project/django-apscheduler)
 [![Downloads](https://pepy.tech/badge/django-apscheduler)](https://pepy.tech/project/django-apscheduler)
-[![Build status](https://travis-ci.org/jarekwg/django-apscheduler.svg?branch=master)](https://travis-ci.org/jarekwg/django-apscheduler)
-[![codecov](https://codecov.io/gh/jarekwg/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/jarekwg/django-apscheduler)
+[![Build status](https://travis-ci.org/jcass77/django-apscheduler.svg?branch=master)](https://travis-ci.org/jcass77/django-apscheduler)
+[![codecov](https://codecov.io/gh/jcass77/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/jcass77/django-apscheduler)
 [![Code style:black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://pypi.org/project/black)
 
 [APScheduler](https://github.com/agronholm/apscheduler) for [Django](https://github.com/django/django).
