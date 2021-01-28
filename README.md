@@ -46,16 +46,17 @@ So for now your options are to either:
   
 Features of this package include:
 
-- A custom `DjangoJobStore`: an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
+- A custom `DjangoJobStore`:
+  an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
   that persists scheduled jobs to the Django database. You can view the scheduled jobs and monitor the job execution
   directly via the Django admin interface:
-  
-  ![Jobs](docs/screenshots/job_overview.png)
+
+  ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/job_overview.png)
   
 - The job store also maintains a history of all job executions of the currently scheduled jobs, along with status codes
   and exceptions (if any):
-  
-  ![Jobs](docs/screenshots/execution_overview.png)
+
+  ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/execution_overview.png)
   
 - **Note:** APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
   from the job store as soon as their last scheduled execution has been triggered. This will also delete the
@@ -63,7 +64,7 @@ Features of this package include:
     
 - Job executions can also be triggered manually via the `DjangoJob` admin page:
 
-  ![Jobs](docs/screenshots/run_now.png)
+  ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/run_now.png)
   
 - **Note:** In order to prevent long running jobs from causing the Django HTTP request to time out, the combined maximum
   run time for all APScheduler jobs that are started via the Django admin site is 25 seconds. This timeout value can be
