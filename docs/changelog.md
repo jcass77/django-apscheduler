@@ -7,6 +7,7 @@ This changelog is used to track all major changes to django-apscheduler.
 **Enhancements**
 
 - Include Python 3.9 in continuous integration runs.
+- Switch from Travis-CI to GitHub Actions.
 
 ## v0.5.1 (2020-11-06)
 
