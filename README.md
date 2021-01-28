@@ -3,7 +3,6 @@ Django APScheduler
 
 [![PyPI](https://img.shields.io/pypi/v/django-apscheduler)](https://pypi.org/project/django-apscheduler/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-apscheduler)](https://pypi.org/project/django-apscheduler/)
-[![Downloads](https://pepy.tech/badge/django-apscheduler)](https://pepy.tech/project/django-apscheduler)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jcass77/django-apscheduler/Python%20package)](https://github.com/jcass77/django-apscheduler/actions?query=workflow%3A%22Python+package%22)
 [![Codecov](https://img.shields.io/codecov/c/github/jcass77/django-apscheduler?token=e42b5e88-ff73-411e-9274-effc51049551)](https://codecov.io/gh/jcass77/django-apscheduler)
 [![Code style:black](https://img.shields.io/badge/code%20style-black-black)](https://pypi.org/project/black)
