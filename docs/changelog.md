@@ -2,7 +2,7 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
-## v0.5.2 (UNRELEASED)
+## v0.5.2 (2021-01-28)
 
 **Enhancements**
 
