@@ -1,11 +1,11 @@
 Django APScheduler
 ==================
 
-[![PyPI version](https://badge.fury.io/py/django-apscheduler.svg)](https://badge.fury.io/py/django-apscheduler)
-[![versions](https://img.shields.io/pypi/pyversions/django-apscheduler.svg)](https://pypi.org/project/django-apscheduler)
+[![PyPI](https://img.shields.io/pypi/v/django-apscheduler)](https://pypi.org/project/django-apscheduler/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-apscheduler)
 [![Downloads](https://pepy.tech/badge/django-apscheduler)](https://pepy.tech/project/django-apscheduler)
-[![Build status](https://travis-ci.org/jcass77/django-apscheduler.svg?branch=master)](https://travis-ci.org/jcass77/django-apscheduler)
-[![codecov](https://codecov.io/gh/jcass77/django-apscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/jcass77/django-apscheduler)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jcass77/django-apscheduler/Python%20package)](https://github.com/jcass77/django-apscheduler/actions?query=workflow%3A%22Python+package%22)
+[![codecov](https://codecov.io/gh/jcass77/django-apscheduler/branch/main/graph/badge.svg?token=kzueCB9ID4)](https://codecov.io/gh/jcass77/django-apscheduler)
 [![Code style:black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://pypi.org/project/black)
 
 [APScheduler](https://github.com/agronholm/apscheduler) for [Django](https://github.com/django/django).
