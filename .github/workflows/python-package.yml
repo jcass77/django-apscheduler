@@ -60,7 +60,6 @@ jobs:
                     token: ${{ secrets.CODECOV_TOKEN }}
                     files: coverage.xml
                     flags: unittests
-                    env_vars: PYTHON
-                    name: codecov-umbrella
+                    env_vars: PYTHON, DJANGO
                     fail_ci_if_error: true
                     verbose: true
