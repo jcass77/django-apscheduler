@@ -49,14 +49,18 @@ jobs:
             -   name: Run Tox and update coverage
                 # Run tox using the version of Python in `PATH`
                 run: tox -e django-lts
-            -   name: Upload coverage data to coveralls.io
-                run: |
-                    python -m pip install coveralls
-                    coveralls --service=github
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    COVERALLS_FLAG_NAME: ${{ matrix.python-version }}-django-lts
-                    COVERALLS_PARALLEL: true
+            -   name: Upload coverage to Codecov
+                uses: codecov/codecov-action@v1
+                with:
+                    token: ${{ secrets.CODECOV_TOKEN }}
+                    files: ./coverage1.xml,./coverage2.xml
+                    directory: ./coverage/reports/
+                    flags: unittests
+                    env_vars: OS,PYTHON
+                    name: codecov-umbrella
+                    fail_ci_if_error: true
+                    path_to_write_report: ./coverage/codecov_report.txt
+                    verbose: true
     test-django-latest:
         name: Test Django (latest)
         needs: lint
@@ -82,11 +86,9 @@ jobs:
                 uses: codecov/codecov-action@v1
                 with:
                     token: ${{ secrets.CODECOV_TOKEN }}
-                    files: ./coverage1.xml,./coverage2.xml
-                    directory: ./coverage/reports/
+                    files: coverage.xml
                     flags: unittests
                     env_vars: OS,PYTHON
                     name: codecov-umbrella
                     fail_ci_if_error: true
-                    path_to_write_report: ./coverage/codecov_report.txt
                     verbose: true
