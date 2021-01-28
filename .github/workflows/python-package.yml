@@ -50,7 +50,9 @@ jobs:
                 # Run tox using the version of Python in `PATH`
                 run: tox -e django-lts
             -   name: Upload coverage data to coveralls.io
-                run: coveralls --service=github
+                run: |
+                    python -m pip install coveralls
+                    coveralls --service=github
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     COVERALLS_FLAG_NAME: ${{ matrix.python-version }}-django-lts
@@ -77,7 +79,9 @@ jobs:
                 # Run tox using the version of Python in `PATH`
                 run: tox -e django-latest
             -   name: Upload coverage data to coveralls.io
-                run: coveralls --service=github
+                run: |
+                    python -m pip install coveralls
+                    coveralls --service=github
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     COVERALLS_FLAG_NAME: ${{ matrix.python-version }}-django-latest
