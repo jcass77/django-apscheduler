@@ -50,9 +50,6 @@ jobs:
                     python -m pip install --upgrade pip
                     python -m pip install --upgrade django~=${{ matrix.django-version }}
                     if [ -f requirements/local.txt ]; then pip install -r requirements/local.txt; fi
-            -   name: Run Tox and update coverage
-                # Run tox using the version of Python in `PATH`
-                run: tox -e django-lts
             -   name: Upload coverage to Codecov
                 uses: codecov/codecov-action@v1
                 with:
