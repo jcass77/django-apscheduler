@@ -51,7 +51,9 @@ jobs:
                     python -m pip install --upgrade django~=${{ matrix.django-version }}
                     if [ -f requirements/local.txt ]; then pip install -r requirements/local.txt; fi
             -   name: Test with pytest and update coverage
-                run: coverage xml run -m pytest
+                run: |
+                    coverage run -m pytest
+                    coverage xml
             -   name: Upload coverage to Codecov
                 uses: codecov/codecov-action@v1
                 with:
