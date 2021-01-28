@@ -59,7 +59,6 @@ jobs:
                     name: codecov-umbrella
                     fail_ci_if_error: true
                     verbose: true
-                verbose: true
     test-django-latest:
         name: Test Django (latest)
         needs: lint
