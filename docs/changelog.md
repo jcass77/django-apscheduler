@@ -7,6 +7,7 @@ This changelog is used to track all major changes to django-apscheduler.
 **Fixes**
 
 - Fix screenshot links in README to work on PyPI.
+- Remove reference to deprecated `django.utils.translation.ugettext_lazy`.
 
 ## v0.5.2 (2021-01-28)
 
