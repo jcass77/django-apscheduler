@@ -9,6 +9,12 @@ This changelog is used to track all major changes to django-apscheduler.
 - Fix screenshot links in README to work on PyPI.
 - Remove reference to deprecated `django.utils.translation.ugettext_lazy`.
 
+**Enhancements**
+
+- The Django admin page will now show a list of all the manually triggered jobs that could not be completed
+  before `settings.APSCHEDULER_RUN_NOW_TIMEOUT` seconds elapsed.
+- Make more of the string output on the admin page Django-translatable.
+
 ## v0.5.2 (2021-01-28)
 
 **Enhancements**

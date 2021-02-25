@@ -9,7 +9,7 @@ from django.db.models import Avg
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler import util
@@ -27,7 +27,8 @@ class DjangoJobAdmin(admin.ModelAdmin):
         self._django_jobstore = DjangoJobStore()
         self._memory_jobstore = DjangoMemoryJobStore()
 
-        self._jobs_executed = []
+        self._jobs_scheduled = None
+        self._jobs_executed = None
         self._job_execution_timeout = getattr(
             settings, "APSCHEDULER_RUN_NOW_TIMEOUT", 15
         )
@@ -58,7 +59,7 @@ class DjangoJobAdmin(admin.ModelAdmin):
         except DjangoJobExecution.DoesNotExist:
             return "None"
 
-    average_duration.short_description = "Average Duration (sec)"
+    average_duration.short_description = _("Average Duration (sec)")
 
     actions = ["run_selected_jobs"]
 
@@ -69,21 +70,16 @@ class DjangoJobAdmin(admin.ModelAdmin):
 
         scheduler.start()
 
-        num_jobs_scheduled = 0
-        self._jobs_executed = []
+        self._jobs_scheduled = set()
+        self._jobs_executed = set()
         start_time = timezone.now()
 
         for item in queryset:
             django_job = self._django_jobstore.lookup_job(item.id)
 
             if not django_job:
-                msg_dict = {"job_id": item.id}
-                msg = _(
-                    "Could not find job {job_id} in the database! Skipping execution..."
-                )
-                self.message_user(
-                    request, format_html(msg, **msg_dict), messages.WARNING
-                )
+                msg = _("Could not find job {} in the database! Skipping execution...")
+                self.message_user(request, format_html(msg, item.id), messages.WARNING)
                 continue
 
             scheduler.add_job(
@@ -98,17 +94,26 @@ class DjangoJobAdmin(admin.ModelAdmin):
                 max_instances=django_job.max_instances,
             )
 
-            num_jobs_scheduled += 1
+            self._jobs_scheduled.add(django_job.id)
 
-        while len(self._jobs_executed) < num_jobs_scheduled:
+        while self._jobs_scheduled != self._jobs_executed:
             # Wait for selected jobs to be executed.
             if timezone.now() > start_time + timedelta(
-                seconds=self._job_execution_timeout
+                    seconds=self._job_execution_timeout
             ):
                 msg = _(
-                    "Maximum runtime exceeded! Not all jobs could be completed successfully."
+                    "Maximum runtime of {} seconds exceeded! Not all jobs could be completed successfully. "
+                    "Pending jobs: {}"
                 )
-                self.message_user(request, msg, messages.ERROR)
+                self.message_user(
+                    request,
+                    format_html(
+                        msg,
+                        self._job_execution_timeout,
+                        ",".join(self._jobs_scheduled - self._jobs_executed),
+                    ),
+                    messages.ERROR,
+                )
 
                 scheduler.shutdown(wait=False)
                 return None
@@ -116,17 +121,15 @@ class DjangoJobAdmin(admin.ModelAdmin):
             time.sleep(0.1)
 
         for job_id in self._jobs_executed:
-            msg_dict = {"job_id": job_id}
-            msg = _("Executed job '{job_id}'!")
-            self.message_user(request, format_html(msg, **msg_dict))
+            self.message_user(request, format_html(_("Executed job '{}'!"), job_id))
 
         scheduler.shutdown()
         return None
 
     def _handle_execution_event(self, event: events.JobExecutionEvent):
-        self._jobs_executed.append(event.job_id)
+        self._jobs_executed.add(event.job_id)
 
-    run_selected_jobs.short_description = "Run the selected django jobs"
+    run_selected_jobs.short_description = _("Run the selected django jobs")
 
 
 @admin.register(DjangoJobExecution)
@@ -153,5 +156,5 @@ class DjangoJobExecutionAdmin(admin.ModelAdmin):
     def duration_text(self, obj):
         return obj.duration or "N/A"
 
-    html_status.short_description = "Status"
-    duration_text.short_description = "Duration (sec)"
+    html_status.short_description = _("Status")
+    duration_text.short_description = _("Duration (sec)")

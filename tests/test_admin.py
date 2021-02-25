@@ -3,8 +3,10 @@ from unittest import mock
 
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
+from django.conf import settings
 from django.contrib.messages.storage.base import BaseStorage
 from django.utils import timezone
+from django.utils.html import format_html
 
 from django_apscheduler.admin import DjangoJobAdmin, DjangoJobExecutionAdmin
 from django_apscheduler.jobstores import DjangoJobStore
@@ -97,7 +99,11 @@ class TestDjangoJobAdmin:
         assert admin.average_duration(job) == "None"
 
     @pytest.mark.django_db(transaction=True)
-    def test_run_selected_jobs_creates_job_execution_entry(self, rf):
+    def test_run_selected_jobs_creates_job_execution_entry(self, rf, monkeypatch):
+        monkeypatch.setattr(
+            settings, "APSCHEDULER_RUN_NOW_TIMEOUT", 1
+        )  # Shorten timeout to reduce test runtime
+
         scheduler = BackgroundScheduler()
         scheduler.add_jobstore(DjangoJobStore())
         scheduler.start()
@@ -145,11 +151,10 @@ class TestDjangoJobAdmin:
         scheduler.shutdown()
 
     @pytest.mark.django_db(transaction=True)
-    def test_run_selected_jobs_enforces_timeout(self, rf, settings):
-
-        settings.APSCHEDULER_RUN_NOW_TIMEOUT = (
-            1  # Shorten timeout to reduce test runtime
-        )
+    def test_run_selected_jobs_enforces_timeout(self, rf, monkeypatch):
+        monkeypatch.setattr(
+            settings, "APSCHEDULER_RUN_NOW_TIMEOUT", 1
+        )  # Shorten timeout to reduce test runtime
 
         scheduler = BackgroundScheduler()
         scheduler.add_jobstore(DjangoJobStore())
@@ -170,7 +175,12 @@ class TestDjangoJobAdmin:
         assert DjangoJobExecution.objects.count() == 0
         r._messages.add.assert_called_with(
             40,
-            "Maximum runtime exceeded! Not all jobs could be completed successfully.",
+            format_html(
+                "Maximum runtime of {} seconds exceeded! Not all jobs could be completed successfully. "
+                "Pending jobs: {}",
+                admin._job_execution_timeout,
+                ",".join({job.id}),
+            ),
             "",
         )
 
@@ -186,7 +196,9 @@ class TestDjangoJobExecutionAdmin:
         request.addfinalizer(job.delete)
 
         execution = DjangoJobExecution.objects.create(
-            job=job, status=DjangoJobExecution.SUCCESS, run_time=now,
+            job=job,
+            status=DjangoJobExecution.SUCCESS,
+            run_time=now,
         )
 
         admin = DjangoJobExecutionAdmin(DjangoJob, None)
@@ -202,7 +214,9 @@ class TestDjangoJobExecutionAdmin:
         request.addfinalizer(job.delete)
 
         execution = DjangoJobExecution.objects.create(
-            job=job, status=DjangoJobExecution.SUCCESS, run_time=now,
+            job=job,
+            status=DjangoJobExecution.SUCCESS,
+            run_time=now,
         )
 
         admin = DjangoJobExecutionAdmin(DjangoJob, None)
