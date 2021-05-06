@@ -127,9 +127,11 @@ from django_apscheduler.models import DjangoJobExecution
 
 
 logger = logging.getLogger(__name__)
-
+from django.db import reset_queries, close_old_connections
 
 def my_job():
+    # need call close_old_connections() before use database connection or use model when use django model or database connection without a django request 
+    close_old_connections()
     #  Your job processing logic here... 
     pass
 
