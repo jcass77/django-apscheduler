@@ -208,8 +208,8 @@ are [officially supported by Django](https://docs.djangoproject.com/en/dev/ref/d
 probably won't work with unsupported databases like Microsoft SQL Server, MongoDB, and the like.
 
 
-Database Connection Timeouts
-----------------------------
+Database Connections and Timeouts
+---------------------------------
 
 django-apscheduler is dependent on the standard Django
 database [configuration settings](https://docs.djangoproject.com/en/dev/ref/databases/#general-notes). These settings,
