@@ -213,8 +213,10 @@ Database Connections and Timeouts
 
 django-apscheduler is dependent on the standard Django
 database [configuration settings](https://docs.djangoproject.com/en/dev/ref/databases/#general-notes). These settings,
-combined with how your database has been configured, determine how connection management will be done. If you encounter
-any kind of 'lost connection' errors then it probably means that:
+combined with how your database has been configured, determine how connection management will be done for your specific
+deployment.
+
+If you encounter any kind of 'lost connection' errors then it probably means that:
 
 - your database connections have timed out. It is probably time to start looking at deploying a connection pooler, like
   [pgbouncer](https://www.pgbouncer.org), to manage database connections for you.
