@@ -189,16 +189,40 @@ Advanced Usage
 --------------
 
 django-apscheduler assumes that you are already familiar with APScheduler and its proper use. If not, then please head
-over to the project page and have a look through the [APScheduler documentation](https://apscheduler.readthedocs.io/en/latest/index.html).
+over to the project page and have a look through
+the [APScheduler documentation](https://apscheduler.readthedocs.io/en/latest/index.html).
 
-It is possible to make use of [different types of schedulers](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)
+It is possible to make use
+of [different types of schedulers](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)
 depending on your environment and use case. If you would prefer running a `BackgroundScheduler` instead of using a
 `BlockingScheduler`, then you should be aware that using APScheduler with uWSGI requires some additional
 [configuration steps](https://apscheduler.readthedocs.io/en/latest/faq.html#how-can-i-use-apscheduler-with-uwsgi) in
 order to re-enable threading support.
-  
-  
-## Project resources
+
+
+Supported Databases
+-------------------
+
+Please take note of the list of databases that
+are [officially supported by Django](https://docs.djangoproject.com/en/dev/ref/databases/#databases). django-apscheduler
+probably won't work with unsupported databases like Microsoft SQL Server, MongoDB, and the like.
+
+
+Database Connection Timeouts
+----------------------------
+
+django-apscheduler is dependent on the standard Django
+database [configuration settings](https://docs.djangoproject.com/en/dev/ref/databases/#general-notes). These settings,
+combined with how your database has been configured, determine how connection management will be done. If you encounter
+any kind of 'lost connection' errors then it probably means that:
+
+- your database connections have timed out. It is probably time to start looking at deploying a connection pooler, like
+  [pgbouncer](https://www.pgbouncer.org), to manage database connections for you.
+- your database server has crashed / been restarted.
+  Django [will not reconnect automatically](https://code.djangoproject.com/ticket/24810).
+
+Project resources
+-----------------
 
 - [Changelog](docs/changelog.md)
 - [Release procedures](docs/releasing.md)
