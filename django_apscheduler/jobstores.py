@@ -208,6 +208,21 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             return None
 
     def get_due_jobs(self, now) -> List[AppSchedulerJob]:
+        # Close old and unusable connections. Specifically:
+        # - Persistent connections past CONN_MAX_AGE.
+        # - Connections that errored out (e.g. due to the DB going down).
+        # If closed, the query in _get_jobs() will try to reconnect.
+        #
+        # Normally, Django calls this when a request starts and finishes,
+        # however we are (probably) not running in request context but in
+        # a continuous loop. So without this, the same connection would be
+        # used forever, and any error would never be recovered from (e.g.
+        # when the DB comes back up).
+        #
+        # get_due_jobs() seems like the most appropriate place for this,
+        # as it's called at the beginning of every scheduler iteration.
+        db.close_old_connections()
+
         dt = get_django_internal_datetime(now)
         return self._get_jobs(next_run_time__lte=dt)
 

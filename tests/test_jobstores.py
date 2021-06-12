@@ -5,6 +5,7 @@ import pytest
 from apscheduler import events
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
 from django.utils import timezone
+from django import db
 
 from django_apscheduler.jobstores import (
     DjangoJobStore,
@@ -159,7 +160,28 @@ class TestDjangoJobStore:
     See 'test_apscheduler_jobstore.py' for details
     """
 
-    pass
+    @pytest.mark.django_db(transaction=True)
+    def test_database_connection_recovery(self, jobstore, settings):
+        """Test that get_due_jobs() first closes unusable or obsolete
+        connections, like the start of a Django request."""
+        # Enable persistent connections to make sure the error causes the need
+        # to reconnect.
+        settings.MAX_CONN_AGE = 100000
+
+        # Precondition: simple case works.
+        db.connection.close()
+        jobstore.get_due_jobs(datetime(2016, 5, 3))
+
+        # Cause the connection to be errored.
+        db.connection.close()
+        with pytest.raises(db.OperationalError):
+            with db.connection.cursor() as cursor:
+                cursor.execute("INVALID SYNTAX ERROR")
+        assert db.connection.errors_occurred
+
+        # Should reconnect/clear error.
+        jobstore.get_due_jobs(datetime(2016, 5, 3))
+        assert not db.connection.errors_occurred
 
 
 @pytest.mark.django_db
