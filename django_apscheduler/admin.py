@@ -99,7 +99,7 @@ class DjangoJobAdmin(admin.ModelAdmin):
         while self._jobs_scheduled != self._jobs_executed:
             # Wait for selected jobs to be executed.
             if timezone.now() > start_time + timedelta(
-                    seconds=self._job_execution_timeout
+                seconds=self._job_execution_timeout
             ):
                 msg = _(
                     "Maximum runtime of {} seconds exceeded! Not all jobs could be completed successfully. "

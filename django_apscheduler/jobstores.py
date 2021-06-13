@@ -181,7 +181,8 @@ class DjangoResultStoreMixin:
         )
 
         self._scheduler.add_listener(
-            self.handle_error_event, events.EVENT_JOB_ERROR | events.EVENT_JOB_MISSED,
+            self.handle_error_event,
+            events.EVENT_JOB_ERROR | events.EVENT_JOB_MISSED,
         )
 
 

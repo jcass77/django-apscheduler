@@ -58,7 +58,14 @@ class DjangoJobExecution(models.Model):
     MAX_INSTANCES = "Max instances!"
     ERROR = "Error!"
 
-    STATUS_CHOICES = [(x, x) for x in [SENT, ERROR, SUCCESS,]]
+    STATUS_CHOICES = [
+        (x, x)
+        for x in [
+            SENT,
+            ERROR,
+            SUCCESS,
+        ]
+    ]
 
     id = models.BigAutoField(
         primary_key=True, help_text=_("Unique ID for this job execution.")
@@ -79,7 +86,8 @@ class DjangoJobExecution(models.Model):
     )
 
     run_time = models.DateTimeField(
-        db_index=True, help_text=_("Date and time at which this job was executed."),
+        db_index=True,
+        help_text=_("Date and time at which this job was executed."),
     )
 
     # We store this value in the DB even though it can be calculated as `finished - run_time`. This allows quick

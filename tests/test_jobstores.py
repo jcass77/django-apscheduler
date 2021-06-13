@@ -33,7 +33,11 @@ class TestDjangoResultStoreMixin:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
-        "event_code", [events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES, ],
+        "event_code",
+        [
+            events.EVENT_JOB_SUBMITTED,
+            events.EVENT_JOB_MAX_INSTANCES,
+        ],
     )
     def test_handle_submission_event_creates_job_execution(
             self, event_code, jobstore, create_add_job
@@ -99,7 +103,11 @@ class TestDjangoResultStoreMixin:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
-        "event_code", [events.EVENT_JOB_MISSED, events.EVENT_JOB_ERROR,],
+        "event_code",
+        [
+            events.EVENT_JOB_MISSED,
+            events.EVENT_JOB_ERROR,
+        ],
     )
     def test_handle_error_event_creates_job_execution(
         self, jobstore, create_add_job, event_code

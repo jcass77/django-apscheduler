@@ -96,7 +96,10 @@ class TestDjangoJobExecution:
         assert ex.finished is None
 
         DjangoJobExecution.atomic_update_or_create(
-            RLock(), ex.job_id, ex.run_time, DjangoJobExecution.SUCCESS,
+            RLock(),
+            ex.job_id,
+            ex.run_time,
+            DjangoJobExecution.SUCCESS,
         )
 
         ex.refresh_from_db()
@@ -124,7 +127,10 @@ class TestDjangoJobExecution:
         assert ex.finished is None
 
         DjangoJobExecution.atomic_update_or_create(
-            RLock(), ex.job_id, ex.run_time, DjangoJobExecution.SENT,
+            RLock(),
+            ex.job_id,
+            ex.run_time,
+            DjangoJobExecution.SENT,
         )
 
         ex.refresh_from_db()
