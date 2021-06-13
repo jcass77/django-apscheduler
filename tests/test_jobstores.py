@@ -1,9 +1,11 @@
 import warnings
 from datetime import datetime
+from unittest import mock
 
 import pytest
 from apscheduler import events
 from apscheduler.events import JobExecutionEvent, JobSubmissionEvent
+from django import db
 from django.utils import timezone
 
 from django_apscheduler.jobstores import (
@@ -12,6 +14,7 @@ from django_apscheduler.jobstores import (
     register_events,
 )
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
+from tests import conftest
 from tests.conftest import DummyScheduler, dummy_job
 
 
@@ -167,7 +170,115 @@ class TestDjangoJobStore:
     See 'test_apscheduler_jobstore.py' for details
     """
 
-    pass
+    @pytest.mark.django_db(transaction=True)
+    def test_lookup_job_does_retry_on_db_operational_error(self, jobstore):
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.get",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.lookup_job("some job")
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_get_due_jobs_does_retry_on_db_operational_error(self, jobstore):
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.filter",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.get_due_jobs(datetime(2016, 5, 3))
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_get_next_run_time_does_retry_on_db_operational_error(self, jobstore):
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.filter",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.get_next_run_time()
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_add_job_does_retry_on_db_operational_error(self, jobstore, create_job):
+        job = create_job(
+            func=dummy_job,
+            trigger="date",
+            trigger_args={"run_date": datetime(2016, 5, 3)},
+            id="test",
+        )
+
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.create",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.add_job(job)
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_update_job_does_retry_on_db_operational_error(self, jobstore, create_job):
+        job = create_job(
+            func=dummy_job,
+            trigger="date",
+            trigger_args={"run_date": datetime(2016, 5, 3)},
+            id="test",
+        )
+
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.get",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.update_job(job)
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_remove_job_does_retry_on_db_operational_error(self, jobstore):
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.get",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.remove_job("some job")
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_remove_all_jobs_does_retry_on_db_operational_error(self, jobstore):
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.all",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore.remove_all_jobs()
+
+            assert close_mock.call_count == 1
+
+    @pytest.mark.django_db(transaction=True)
+    def test_get_jobs_does_retry_on_db_operational_error(self, jobstore):
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.jobstores.DjangoJob.objects.filter",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    jobstore._get_jobs()
+
+            assert close_mock.call_count == 1
 
 
 @pytest.mark.django_db

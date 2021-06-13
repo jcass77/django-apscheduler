@@ -14,6 +14,9 @@ This changelog is used to track all major changes to django-apscheduler.
 - The Django admin page will now show a list of all the manually triggered jobs that could not be completed
   before `settings.APSCHEDULER_RUN_NOW_TIMEOUT` seconds elapsed.
 - Make more of the string output on the admin page Django-translatable.
+- Introduce a `retry_on_db_operational_error` utility decorator for retrying database-related operations when
+  a `django.db.OperationalError` is encountered (
+  Resolves [#145](https://github.com/jcass77/django-apscheduler/issues/145)).
 
 ## v0.5.2 (2021-01-28)
 

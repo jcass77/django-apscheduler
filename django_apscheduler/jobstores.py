@@ -13,6 +13,7 @@ from apscheduler.schedulers.base import BaseScheduler
 from django import db
 from django.db import transaction, IntegrityError
 
+from django_apscheduler import util
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.util import (
     get_apscheduler_datetime,
@@ -200,6 +201,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         super().__init__()
         self.pickle_protocol = pickle_protocol
 
+    @util.retry_on_db_operational_error
     def lookup_job(self, job_id: str) -> Union[None, AppSchedulerJob]:
         try:
             job_state = DjangoJob.objects.get(id=job_id).job_state
@@ -212,6 +214,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         dt = get_django_internal_datetime(now)
         return self._get_jobs(next_run_time__lte=dt)
 
+    @util.retry_on_db_operational_error
     def get_next_run_time(self):
         try:
             job = DjangoJob.objects.filter(next_run_time__isnull=False).earliest(
@@ -228,6 +231,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
         return jobs
 
+    @util.retry_on_db_operational_error
     def add_job(self, job: AppSchedulerJob):
         with transaction.atomic():
             try:
@@ -239,6 +243,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             except IntegrityError:
                 raise ConflictingIdError(job.id)
 
+    @util.retry_on_db_operational_error
     def update_job(self, job: AppSchedulerJob):
         # Acquire lock for update
         with transaction.atomic():
@@ -255,12 +260,14 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             except DjangoJob.DoesNotExist:
                 raise JobLookupError(job.id)
 
+    @util.retry_on_db_operational_error
     def remove_job(self, job_id: str):
         try:
             DjangoJob.objects.get(id=job_id).delete()
         except DjangoJob.DoesNotExist:
             raise JobLookupError(job_id)
 
+    @util.retry_on_db_operational_error
     def remove_all_jobs(self):
         # Implicit: will also delete all DjangoJobExecutions due to on_delete=models.CASCADE
         DjangoJob.objects.all().delete()
@@ -277,6 +284,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
         return job
 
+    @util.retry_on_db_operational_error
     def _get_jobs(self, **filters):
         jobs = []
         failed_job_ids = set()
