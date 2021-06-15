@@ -145,3 +145,30 @@ def test_retry_on_db_operational_error_non_db_operational_error_re_raises(
             "DB error executing 'dummy_db_op' (Some DB-related error). Retrying with a new DB connection..."
             not in caplog.text
     )
+
+
+def test_ensure_old_connections_are_closed_calls_close_old_connections():
+    @util.ensure_old_connections_are_closed
+    def job_mock():
+        pass
+
+    with mock.patch(
+            "django_apscheduler.util.db.close_old_connections"
+    ) as close_old_connections_mock:
+        job_mock()
+
+    assert close_old_connections_mock.call_count == 2
+
+
+def test_ensure_old_connections_are_closed_even_if_exception_is_raised():
+    @util.ensure_old_connections_are_closed
+    def job_mock():
+        raise RuntimeError("some error")
+
+    with mock.patch(
+            "django_apscheduler.util.db.close_old_connections"
+    ) as close_old_connections_mock:
+        with pytest.raises(RuntimeError, match="some error"):
+            job_mock()
+
+    assert close_old_connections_mock.call_count == 2

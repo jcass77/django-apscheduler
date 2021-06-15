@@ -107,3 +107,29 @@ def retry_on_db_operational_error(func):
         return result
 
     return func_wrapper
+
+
+def ensure_old_connections_are_closed(func):
+    """
+    A decorator that ensures that Django database connections that have become unusable, or are obsolete, are closed
+    before and after a job is run (see: https://docs.djangoproject.com/en/dev/ref/databases/#general-notes
+    for background.)
+
+    This is analogous to the Django standard approach of closing old connections before and after each HTTP request
+    is processed.
+
+    Useful when used in APScheduler jobs that require database access in order to ensure that a fresh database
+    connection is always available - prevents `django.db.OperationalError`s.
+    """
+
+    @wraps(func)
+    def func_wrapper(*args, **kwargs):
+        db.close_old_connections()
+        try:
+            result = func(*args, **kwargs)
+        finally:
+            db.close_old_connections()
+
+        return result
+
+    return func_wrapper
