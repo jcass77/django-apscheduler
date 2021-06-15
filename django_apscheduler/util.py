@@ -70,7 +70,7 @@ def retry_on_db_operational_error(func):
 
     CAUTION: any method that this decorator is applied to MUST be idempotent (i.e. the method can be retried a second
     time without any unwanted side effects). If your method performs any actions before the django.db.OperationalError
-    is raised then those will be repeated. If you don't want that to happen then it would be best to handle the
+    is raised then those actions will be repeated. If you don't want that to happen then it would be best to handle the
     django.db.OperationalError exception manually and call `db.close_old_connections()` in an appropriate fashion
     inside your method instead.
 
@@ -79,7 +79,7 @@ def retry_on_db_operational_error(func):
     1. Calling db.close_old_connections() pre-emptively before the job store executes a DB operation: this would break
        Django's standard connection management. For example, if the `CONN_MAX_AGE` setting is set to 0, a new connection
        will be required for *every* database operation (as opposed to at the end of every *request* like in the Django
-       standard). The database overhead, and associated performance penalty, that this approach would impose feel
+       standard). The database overhead, and associated performance penalty, that this approach would impose seem
        unreasonable. See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-CONN_MAX_AGE.
 
     2. Using a custom QuerySet or database backend that handles django.db.OperationalError automatically: this would
@@ -89,8 +89,8 @@ def retry_on_db_operational_error(func):
     3. Pinging the database before each query to see if it is still available: django-apscheduler used to make use of
        this approach (see: https://github.com/jcass77/django-apscheduler/blob/9ac06b33d19961da6c36d5ac814d4338beb11309/django_apscheduler/models.py#L16-L51)
        Injecting an additional database query, on an arbitrary schedule, seems like an unreasonable thing to do,
-       especially considering that doing so would probably be unnecessary for users that already make use of a database
-       connection pooler.
+       especially considering that this would be unnecessary for users that already make use of a database connection
+       pooler to manage their connection properly.
     """
 
     @wraps(func)

@@ -143,7 +143,7 @@ class TestDjangoJobExecution:
         assert ex.finished is None
 
     @pytest.mark.django_db(transaction=True)
-    def test_test_atomic_update_or_create_does_retry_on_db_operational_error(
+    def test_atomic_update_or_create_does_retry_on_db_operational_error(
             self, request, jobstore
     ):
         now = timezone.now()

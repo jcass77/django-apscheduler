@@ -128,7 +128,7 @@ def test_retry_on_db_operational_error_db_operational_error_retry_error_persists
 
 
 @pytest.mark.django_db
-def test_retry_on_db_operational_error_raises_on_non_db_operational_error_re_raises(
+def test_retry_on_db_operational_error_non_db_operational_error_re_raises(
         caplog,
 ):
     @util.retry_on_db_operational_error
