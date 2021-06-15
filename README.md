@@ -246,8 +246,8 @@ If you still encounter any kind of 'lost database connection' errors then it pro
 Common footguns
 ---------------
 
-Unless you really know what you are doing, you shouldn't be using `BackgroundScheduler`. This can lead to all sorts of
-temptations like:
+Unless you have a very specific set of requirements, and have intimate knowledge of the inner workings of APScheduler,
+you shouldn't be using `BackgroundScheduler`. This can lead to all sorts of temptations like:
 
 * Firing up a scheduler inside of a Django view. This will most likely cause more than one scheduler to run concurrently
   and lead to jobs running multiple times (see the above introduction to this README for a more thorough treatment of
@@ -258,8 +258,8 @@ temptations like:
   kill any long-running threads (your jobs) with extreme prejudice (thinking that they are caused by misbehaving HTTP
   requests).
 
-Relying on `BlockingScheduler` forces you to run APScheduler in its own dedicated process. The example code provided in
-`runapscheduler.py` above is a good starting point.
+Relying on `BlockingScheduler` forces you to run APScheduler in its own dedicated process that is not handled or
+monitored by the webserver. The example code provided in `runapscheduler.py` above is a good starting point.
 
 
 Project resources
