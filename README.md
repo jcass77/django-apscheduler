@@ -70,6 +70,7 @@ Features of this package include:
   run time for all APScheduler jobs that are started via the Django admin site is 25 seconds. This timeout value can be
   configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
 
+
 Installation
 ------------
 
@@ -145,7 +146,7 @@ def delete_old_job_executions(max_age=604_800):
     This job deletes all APScheduler job executions older than `max_age` from the database.
     
     :param max_age: The maximum length of time to retain old job execution records. Defaults
-    to 7 days.
+                    to 7 days.
     """
     DjangoJobExecution.objects.delete_old_job_executions(max_age)
 
@@ -237,10 +238,29 @@ If you still encounter any kind of 'lost database connection' errors then it pro
 
 - Your database connections timed out in the middle of executing a job. You should probably consider incorporating a
   connection pooler as part of your deployment for more robust database connection management
-  ([pgbouncer](https://www.pgbouncer.org) for PostgreSQL, other DB platforms should also have some options available).
+  (e.g. [pgbouncer](https://www.pgbouncer.org) for PostgreSQL, or the equivalent for other DB platforms).
 - Your database server has crashed / been restarted.
   Django [will not reconnect automatically](https://code.djangoproject.com/ticket/24810)
   and you need to re-start django-apscheduler as well.
+
+Common footguns
+---------------
+
+Unless you really know what you are doing, you shouldn't be using `BackgroundScheduler`. This can lead to all sorts of
+temptations like:
+
+* Firing up a scheduler inside of a Django view. This will most likely cause more than one scheduler to run concurrently
+  and lead to jobs running multiple times (see the above introduction to this README for a more thorough treatment of
+  the subject).
+* Bootstrapping a scheduler somewhere else inside of your Django application. It feels like this should solve the
+  problem mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated
+  all of your background task processing to whatever webserver you are using (Gunicorn, uWSGI, etc.). It will probably
+  kill any long-running threads (your jobs) with extreme prejudice (thinking that they are caused by misbehaving HTTP
+  requests).
+
+Relying on `BlockingScheduler` forces you to run APScheduler in its own dedicated process. The example code provided in
+`runapscheduler.py` above is a good starting point.
+
 
 Project resources
 -----------------
