@@ -124,7 +124,7 @@ from apscheduler.triggers.cron import CronTrigger
 from django.core.management.base import BaseCommand
 from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
-
+from django_apscheduler import util
 
 logger = logging.getLogger(__name__)
 
@@ -133,13 +133,15 @@ def my_job():
     #  Your job processing logic here... 
     pass
 
+
+@util.ensure_old_connections_are_closed
 def delete_old_job_executions(max_age=604_800):
-    """This job deletes all apscheduler job executions older than `max_age` from the database."""
+    """This job deletes all APScheduler job executions older than `max_age` from the database."""
     DjangoJobExecution.objects.delete_old_job_executions(max_age)
 
 
 class Command(BaseCommand):
-    help = "Runs apscheduler."
+    help = "Runs APScheduler."
 
     def handle(self, *args, **options):
         scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
@@ -213,15 +215,21 @@ Database Connections and Timeouts
 
 django-apscheduler is dependent on the standard Django
 database [configuration settings](https://docs.djangoproject.com/en/dev/ref/databases/#general-notes). These settings,
-combined with how your database has been configured, determine how connection management will be done for your specific
-deployment.
+combined with how your database has been configured, determine how connection management will be performed for your
+specific deployment.
 
 If you encounter any kind of 'lost connection' errors then it probably means that:
 
-- your database connections have timed out. It is probably time to start looking at deploying a connection pooler, like
+- Your database connections have timed out. It is probably time to start looking at deploying a connection pooler, like
   [pgbouncer](https://www.pgbouncer.org), to manage database connections for you.
-- your database server has crashed / been restarted.
-  Django [will not reconnect automatically](https://code.djangoproject.com/ticket/24810).
+- Your database server has crashed / been restarted.
+  Django [will not reconnect automatically](https://code.djangoproject.com/ticket/24810)
+  and you need to re-start django-apscheduler as well.
+
+If your APScheduler jobs require database access, and you are **not** making use of a connection pooler and persistent
+connections, then it is probably a good idea to wrap those jobs in a `ensure_old_connections_are_closed` decorator to
+ensure that Django's [CONN_MAX_AGE](https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-CONN_MAX_AGE)
+configuration setting is enforced before and after your job is run.
 
 Project resources
 -----------------

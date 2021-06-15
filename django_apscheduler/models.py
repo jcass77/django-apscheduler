@@ -126,6 +126,7 @@ class DjangoJobExecution(models.Model):
     objects = DjangoJobExecutionManager()
 
     @classmethod
+    @util.retry_on_db_operational_error
     def atomic_update_or_create(
         cls,
         lock,
@@ -136,7 +137,7 @@ class DjangoJobExecution(models.Model):
         traceback: str = None,
     ) -> "DjangoJobExecution":
         """
-        Uses an APScheduler lock to ensures that only one database entry can be created / updated at a time.
+        Uses an APScheduler lock to ensure that only one database entry can be created / updated at a time.
 
         This keeps django_apscheduler in sync with APScheduler and maintains a 1:1 mapping between APScheduler events
         that are triggered and the corresponding DjangoJobExecution model instances that are persisted to the database.

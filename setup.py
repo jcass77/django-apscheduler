@@ -37,6 +37,9 @@ setup(
     ],
     keywords="django apscheduler django-apscheduler",
     packages=find_packages(exclude=("tests",)),
-    install_requires=["django>=2.2", "apscheduler>=3.2,<4.0", ],
+    install_requires=[
+        "django>=2.2",
+        "apscheduler>=3.2,<4.0",
+    ],
     zip_safe=False,
 )
