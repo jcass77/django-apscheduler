@@ -134,17 +134,18 @@ def my_job():
     pass
 
 
-# The `ensure_old_connections_are_closed` decorator ensures that database connections, that have become unusable or are
-# obsolete, are closed before and after our job has run.
+# The `ensure_old_connections_are_closed` decorator ensures that database connections, that
+# have become unusable or are obsolete, are closed before and after our job has run.
 # 
-# It is only required when your job needs to access the database and you are NOT making use of a database connection
-# pooler.
+# It is only required when your job needs to access the database and you are NOT making use 
+# of a database connection pooler.
 @util.ensure_old_connections_are_closed
 def delete_old_job_executions(max_age=604_800):
     """
     This job deletes all APScheduler job executions older than `max_age` from the database.
     
-    :param max_age: The maximum length of time to retain old job execution records. Defaults to 7 days.
+    :param max_age: The maximum length of time to retain old job execution records. Defaults
+    to 7 days.
     """
     DjangoJobExecution.objects.delete_old_job_executions(max_age)
 
