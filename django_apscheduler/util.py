@@ -72,7 +72,7 @@ def retry_on_db_operational_error(func):
     time without any unwanted side effects). If your method performs any actions before the django.db.OperationalError
     is raised then those actions will be repeated. If you don't want that to happen then it would be best to handle the
     django.db.OperationalError exception manually and call `db.close_old_connections()` in an appropriate fashion
-    inside your method instead.
+    inside your own method instead.
 
     The following list of alternative workarounds were also considered:
 
@@ -86,11 +86,11 @@ def retry_on_db_operational_error(func):
        be more convenient than having to decorate individual methods, but it would also break when a DB operation needs
        to be re-tried as part of an atomic transaction. See: https://github.com/django/django/pull/2740
 
-    3. Pinging the database before each query to see if it is still available: django-apscheduler used to make use of
-       this approach (see: https://github.com/jcass77/django-apscheduler/blob/9ac06b33d19961da6c36d5ac814d4338beb11309/django_apscheduler/models.py#L16-L51)
+    3. Pinging the database before each operation to see if it is still available: django-apscheduler used to make use
+       of this approach (see: https://github.com/jcass77/django-apscheduler/blob/9ac06b33d19961da6c36d5ac814d4338beb11309/django_apscheduler/models.py#L16-L51).
        Injecting an additional database query, on an arbitrary schedule, seems like an unreasonable thing to do,
        especially considering that this would be unnecessary for users that already make use of a database connection
-       pooler to manage their connection properly.
+       pooler to manage their connections properly.
     """
 
     @wraps(func)
@@ -112,14 +112,13 @@ def retry_on_db_operational_error(func):
 def ensure_old_connections_are_closed(func):
     """
     A decorator that ensures that Django database connections that have become unusable, or are obsolete, are closed
-    before and after a job is run (see: https://docs.djangoproject.com/en/dev/ref/databases/#general-notes
-    for background.)
+    before and after a method is executed (see: https://docs.djangoproject.com/en/dev/ref/databases/#general-notes
+    for background).
 
-    This is analogous to the Django standard approach of closing old connections before and after each HTTP request
-    is processed.
+    This decorator is intended to be used to wrap APScheduler jobs, and provides functionality comparable to the
+    Django standard approach of closing old connections before and after each HTTP request is processed.
 
-    Useful when used in APScheduler jobs that require database access in order to ensure that a fresh database
-    connection is always available - prevents `django.db.OperationalError`s.
+    It only makes sense for APScheduler jobs that require database access, and prevents `django.db.OperationalError`s.
     """
 
     @wraps(func)
