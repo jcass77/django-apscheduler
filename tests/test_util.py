@@ -147,8 +147,8 @@ def test_retry_on_db_operational_error_non_db_operational_error_re_raises(
     )
 
 
-def test_ensure_old_connections_are_closed_calls_close_old_connections():
-    @util.ensure_old_connections_are_closed
+def test_close_old_connections_calls_close_old_connections():
+    @util.close_old_connections
     def job_mock():
         pass
 
@@ -160,8 +160,8 @@ def test_ensure_old_connections_are_closed_calls_close_old_connections():
     assert close_old_connections_mock.call_count == 2
 
 
-def test_ensure_old_connections_are_closed_even_if_exception_is_raised():
-    @util.ensure_old_connections_are_closed
+def test_close_old_connections_even_if_exception_is_raised():
+    @util.close_old_connections
     def job_mock():
         raise RuntimeError("some error")
 

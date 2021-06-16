@@ -109,7 +109,7 @@ def retry_on_db_operational_error(func):
     return func_wrapper
 
 
-def ensure_old_connections_are_closed(func):
+def close_old_connections(func):
     """
     A decorator that ensures that Django database connections that have become unusable, or are obsolete, are closed
     before and after a method is executed (see: https://docs.djangoproject.com/en/dev/ref/databases/#general-notes

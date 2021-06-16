@@ -135,17 +135,15 @@ def my_job():
     pass
 
 
-# The `ensure_old_connections_are_closed` decorator ensures that database connections, that
-# have become unusable or are obsolete, are closed before and after our job has run.
-# 
-# It is only required when your job needs to access the database and you are NOT making use 
-# of a database connection pooler.
-@util.ensure_old_connections_are_closed
+# The `close_old_connections` decorator ensures that database connections, that have become unusable or are obsolete,
+# are closed before and after our job has run.
+@util.close_old_connections
 def delete_old_job_executions(max_age=604_800):
     """
-    This job deletes all APScheduler job executions older than `max_age` from the database.
+    This job deletes APScheduler job execution entries older than `max_age` from the database. It helps to prevent the
+    database from filling up with old historical records that are no longer useful.
     
-    :param max_age: The maximum length of time to retain old job execution records. Defaults
+    :param max_age: The maximum length of time to retain historical job execution records. Defaults
                     to 7 days.
     """
     DjangoJobExecution.objects.delete_old_job_executions(max_age)
@@ -229,10 +227,10 @@ database [configuration settings](https://docs.djangoproject.com/en/dev/ref/data
 in combination with how your database server has been configured, determine how connection management will be performed
 for your specific deployment.
 
-If your APScheduler jobs require database access, and you are **not** making use of a connection pooler and persistent
-connections, then it is probably a good idea to wrap those jobs in a `ensure_old_connections_are_closed` decorator to
-ensure that Django's [CONN_MAX_AGE](https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-CONN_MAX_AGE)
-configuration setting is enforced before and after your job is run.
+The `close_old_connections` decorator should be applied to APScheduler jobs that require database access. Doing so
+ensures that Django's [CONN_MAX_AGE](https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-CONN_MAX_AGE)
+configuration setting is enforced before and after your job is run. This mirrors the standard Django functionality of
+doing the same before and after handling each HTTP request.
 
 If you still encounter any kind of 'lost database connection' errors then it probably means that:
 
