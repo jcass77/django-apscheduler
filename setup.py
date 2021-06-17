@@ -9,7 +9,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="django-apscheduler",
-    version="0.5.2",
+    version="0.6.0",
     description="APScheduler for Django",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -37,6 +37,9 @@ setup(
     ],
     keywords="django apscheduler django-apscheduler",
     packages=find_packages(exclude=("tests",)),
-    install_requires=["django>=2.2", "apscheduler>=3.2,<4.0", ],
+    install_requires=[
+        "django>=2.2",
+        "apscheduler>=3.2,<4.0",
+    ],
     zip_safe=False,
 )

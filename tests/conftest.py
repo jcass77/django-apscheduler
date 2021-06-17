@@ -7,10 +7,16 @@ from apscheduler.executors.debug import DebugExecutor
 from apscheduler.job import Job
 from apscheduler.schedulers.base import BaseScheduler
 from apscheduler.schedulers.blocking import BlockingScheduler
+from django import db
 from django.db import transaction
 
 from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJob
+
+
+def raise_db_operational_error(*args, **kwargs):
+    """Helper method for triggering a db.OperationalError as a side effect of executing mocked DB operations"""
+    raise db.OperationalError("Some DB-related error")
 
 
 class DummyScheduler(BaseScheduler):

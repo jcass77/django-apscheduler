@@ -46,16 +46,17 @@ So for now your options are to either:
   
 Features of this package include:
 
-- A custom `DjangoJobStore`: an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
+- A custom `DjangoJobStore`:
+  an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
   that persists scheduled jobs to the Django database. You can view the scheduled jobs and monitor the job execution
   directly via the Django admin interface:
-  
-  ![Jobs](docs/screenshots/job_overview.png)
+
+  ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/job_overview.png)
   
 - The job store also maintains a history of all job executions of the currently scheduled jobs, along with status codes
   and exceptions (if any):
-  
-  ![Jobs](docs/screenshots/execution_overview.png)
+
+  ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/execution_overview.png)
   
 - **Note:** APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
   from the job store as soon as their last scheduled execution has been triggered. This will also delete the
@@ -63,11 +64,12 @@ Features of this package include:
     
 - Job executions can also be triggered manually via the `DjangoJob` admin page:
 
-  ![Jobs](docs/screenshots/run_now.png)
+  ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/run_now.png)
   
 - **Note:** In order to prevent long running jobs from causing the Django HTTP request to time out, the combined maximum
   run time for all APScheduler jobs that are started via the Django admin site is 25 seconds. This timeout value can be
   configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
+
 
 Installation
 ------------
@@ -123,27 +125,37 @@ from apscheduler.triggers.cron import CronTrigger
 from django.core.management.base import BaseCommand
 from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
-
+from django_apscheduler import util
 
 logger = logging.getLogger(__name__)
 
 
 def my_job():
-    #  Your job processing logic here... 
+    # Your job processing logic here...
     pass
 
+
+# The `close_old_connections` decorator ensures that database connections, that have become unusable or are obsolete,
+# are closed before and after our job has run.
+@util.close_old_connections
 def delete_old_job_executions(max_age=604_800):
-    """This job deletes all apscheduler job executions older than `max_age` from the database."""
+    """
+    This job deletes APScheduler job execution entries older than `max_age` from the database. It helps to prevent the
+    database from filling up with old historical records that are no longer useful.
+    
+    :param max_age: The maximum length of time to retain historical job execution records. Defaults
+                    to 7 days.
+    """
     DjangoJobExecution.objects.delete_old_job_executions(max_age)
 
 
 class Command(BaseCommand):
-    help = "Runs apscheduler."
+    help = "Runs APScheduler."
 
     def handle(self, *args, **options):
         scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
         scheduler.add_jobstore(DjangoJobStore(), "default")
-        
+
         scheduler.add_job(
             my_job,
             trigger=CronTrigger(second="*/10"),  # Every 10 seconds
@@ -188,16 +200,68 @@ Advanced Usage
 --------------
 
 django-apscheduler assumes that you are already familiar with APScheduler and its proper use. If not, then please head
-over to the project page and have a look through the [APScheduler documentation](https://apscheduler.readthedocs.io/en/latest/index.html).
+over to the project page and have a look through
+the [APScheduler documentation](https://apscheduler.readthedocs.io/en/latest/index.html).
 
-It is possible to make use of [different types of schedulers](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)
+It is possible to make use
+of [different types of schedulers](https://apscheduler.readthedocs.io/en/latest/userguide.html#choosing-the-right-scheduler-job-store-s-executor-s-and-trigger-s)
 depending on your environment and use case. If you would prefer running a `BackgroundScheduler` instead of using a
 `BlockingScheduler`, then you should be aware that using APScheduler with uWSGI requires some additional
 [configuration steps](https://apscheduler.readthedocs.io/en/latest/faq.html#how-can-i-use-apscheduler-with-uwsgi) in
 order to re-enable threading support.
-  
-  
-## Project resources
+
+
+Supported Databases
+-------------------
+
+Please take note of the list of databases that
+are [officially supported by Django](https://docs.djangoproject.com/en/dev/ref/databases/#databases). django-apscheduler
+probably won't work with unsupported databases like Microsoft SQL Server, MongoDB, and the like.
+
+
+Database Connections and Timeouts
+---------------------------------
+
+django-apscheduler is dependent on the standard Django
+database [configuration settings](https://docs.djangoproject.com/en/dev/ref/databases/#general-notes). These settings,
+in combination with how your database server has been configured, determine how connection management will be performed
+for your specific deployment.
+
+The `close_old_connections` decorator should be applied to APScheduler jobs that require database access. Doing so
+ensures that Django's [CONN_MAX_AGE](https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-CONN_MAX_AGE)
+configuration setting is enforced before and after your job is run. This mirrors the standard Django functionality of
+doing the same before and after handling each HTTP request.
+
+If you still encounter any kind of 'lost database connection' errors then it probably means that:
+
+- Your database connections timed out in the middle of executing a job. You should probably consider incorporating a
+  connection pooler as part of your deployment for more robust database connection management
+  (e.g. [pgbouncer](https://www.pgbouncer.org) for PostgreSQL, or the equivalent for other DB platforms).
+- Your database server has crashed / been restarted.
+  Django [will not reconnect automatically](https://code.djangoproject.com/ticket/24810)
+  and you need to re-start django-apscheduler as well.
+
+Common footguns
+---------------
+
+Unless you have a very specific set of requirements, and have intimate knowledge of the inner workings of APScheduler,
+you shouldn't be using `BackgroundScheduler`. This can lead to all sorts of temptations like:
+
+* Firing up a scheduler inside of a Django view. This will most likely cause more than one scheduler to run concurrently
+  and lead to jobs running multiple times (see the above introduction to this README for a more thorough treatment of
+  the subject).
+* Bootstrapping a scheduler somewhere else inside of your Django application. It feels like this should solve the
+  problem mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated
+  all of your background task processing to whatever webserver you are using (Gunicorn, uWSGI, etc.). It will probably
+  kill any long-running threads (your jobs) with extreme prejudice (thinking that they are caused by misbehaving HTTP
+  requests).
+
+Relying on `BlockingScheduler` forces you to run APScheduler in its own dedicated process that is not handled or
+monitored by the webserver. The example code provided in `runapscheduler.py` above is a good starting point.
+
+
+Project resources
+-----------------
 
 - [Changelog](docs/changelog.md)
 - [Release procedures](docs/releasing.md)

@@ -1,12 +1,15 @@
 import logging
 from datetime import timedelta
 from threading import RLock
+from unittest import mock
 
 import pytest
 from apscheduler import events
+from django import db
 from django.utils import timezone
 
 from django_apscheduler.models import DjangoJobExecution, DjangoJob
+from tests import conftest
 
 logging.basicConfig()
 
@@ -96,7 +99,10 @@ class TestDjangoJobExecution:
         assert ex.finished is None
 
         DjangoJobExecution.atomic_update_or_create(
-            RLock(), ex.job_id, ex.run_time, DjangoJobExecution.SUCCESS,
+            RLock(),
+            ex.job_id,
+            ex.run_time,
+            DjangoJobExecution.SUCCESS,
         )
 
         ex.refresh_from_db()
@@ -124,7 +130,10 @@ class TestDjangoJobExecution:
         assert ex.finished is None
 
         DjangoJobExecution.atomic_update_or_create(
-            RLock(), ex.job_id, ex.run_time, DjangoJobExecution.SENT,
+            RLock(),
+            ex.job_id,
+            ex.run_time,
+            DjangoJobExecution.SENT,
         )
 
         ex.refresh_from_db()
@@ -132,6 +141,35 @@ class TestDjangoJobExecution:
         assert ex.status == DjangoJobExecution.SUCCESS
         assert ex.duration is None
         assert ex.finished is None
+
+    @pytest.mark.django_db(transaction=True)
+    def test_atomic_update_or_create_does_retry_on_db_operational_error(
+            self, request, jobstore
+    ):
+        now = timezone.now()
+        job = DjangoJob.objects.create(id="test_job", next_run_time=now)
+        request.addfinalizer(job.delete)
+
+        ex = DjangoJobExecution.objects.create(
+            job_id=job.id,
+            run_time=job.next_run_time - timedelta(seconds=5),
+            status=DjangoJobExecution.SENT,
+        )
+
+        with mock.patch.object(db.connection, "close") as close_mock:
+            with pytest.raises(db.OperationalError, match="Some DB-related error"):
+                with mock.patch(
+                        "django_apscheduler.models.DjangoJobExecution.objects.select_for_update",
+                        side_effect=conftest.raise_db_operational_error,
+                ):
+                    DjangoJobExecution.atomic_update_or_create(
+                        RLock(),
+                        ex.job_id,
+                        ex.run_time,
+                        DjangoJobExecution.SUCCESS,
+                    )
+
+            assert close_mock.call_count == 1
 
     @pytest.mark.django_db
     def test_str(self, request):

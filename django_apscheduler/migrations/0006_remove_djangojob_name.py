@@ -10,5 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="djangojob", name="name",),
+        migrations.RemoveField(
+            model_name="djangojob",
+            name="name",
+        ),
     ]
