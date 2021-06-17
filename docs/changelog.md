@@ -2,7 +2,7 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
-## v0.6.0 (UNRELEASED)
+## v0.6.0 (2021-06-17)
 
 **Fixes**
 
@@ -17,9 +17,9 @@ This changelog is used to track all major changes to django-apscheduler.
 - Introduce a `retry_on_db_operational_error` utility decorator for retrying database-related operations when
   a `django.db.OperationalError` is encountered (Partial resolution
   of [#145](https://github.com/jcass77/django-apscheduler/issues/145)).
-- Introduce a `close_old_connections` utility decorator that can be used in jobs that require a fresh connection to the
-  database to always be available (Partial resolution
-  of [#145](https://github.com/jcass77/django-apscheduler/issues/145)).
+- Introduce a `close_old_connections` utility decorator to enforce Django's `CONN_MAX_AGE` setting. (Partial resolution
+  of [#145](https://github.com/jcass77/django-apscheduler/issues/145)). **This decorator should be applied to all of
+  your jobs that require access to the database.**
 
 ## v0.5.2 (2021-01-28)
 
