@@ -97,7 +97,7 @@ def retry_on_db_operational_error(func):
     def func_wrapper(*args, **kwargs):
         try:
             result = func(*args, **kwargs)
-        except db.OperationalError as e:
+        except db.Error as e:
             logger.warning(
                 f"DB error executing '{func.__name__}' ({e}). Retrying with a new DB connection..."
             )
