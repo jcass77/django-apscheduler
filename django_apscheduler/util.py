@@ -55,11 +55,11 @@ def get_apscheduler_datetime(dt: datetime, scheduler: BaseScheduler) -> datetime
 def retry_on_db_operational_error(func):
     """
     This decorator can be used to wrap a database-related method so that it will be retried when a
-    django.db.OperationalError is encountered.
+    django.db.OperationalError or django.db.InterfaceError is encountered.
 
-    The rationale is that django.db.OperationalError is usually raised when attempting to use an old database
-    connection that the database backend has since closed. Closing the Django connection as well, and re-trying with
-    a fresh connection, is usually sufficient to solve the problem.
+    The rationale is that these exceptions are usually raised when attempting to use an old database connection that
+    the database backend has since closed. Closing the Django connection as well, and re-trying with a fresh connection,
+    is usually sufficient to solve the problem.
 
     It is a reluctant workaround for users that persistently have issues with stale database connections (most notably:
     2006, 'MySQL server has gone away').
@@ -69,10 +69,9 @@ def retry_on_db_operational_error(func):
     workaround is probably justified.
 
     CAUTION: any method that this decorator is applied to MUST be idempotent (i.e. the method can be retried a second
-    time without any unwanted side effects). If your method performs any actions before the django.db.OperationalError
-    is raised then those actions will be repeated. If you don't want that to happen then it would be best to handle the
-    django.db.OperationalError exception manually and call `db.close_old_connections()` in an appropriate fashion
-    inside your own method instead.
+    time without any unwanted side effects). If your method performs any actions before the database exception is
+    raised then those actions will be repeated. If you don't want that to happen then it would be best to handle the
+    exception manually and call `db.close_old_connections()` in an appropriate fashion inside your own method instead.
 
     The following list of alternative workarounds were also considered:
 
@@ -82,9 +81,9 @@ def retry_on_db_operational_error(func):
        standard). The database overhead, and associated performance penalty, that this approach would impose seem
        unreasonable. See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-CONN_MAX_AGE.
 
-    2. Using a custom QuerySet or database backend that handles django.db.OperationalError automatically: this would
-       be more convenient than having to decorate individual methods, but it would also break when a DB operation needs
-       to be re-tried as part of an atomic transaction. See: https://github.com/django/django/pull/2740
+    2. Using a custom QuerySet or database backend that handles the relevant database exceptions automatically: this
+       would be more convenient than having to decorate individual methods, but it would also break when a DB operation
+       needs to be re-tried as part of an atomic transaction. See: https://github.com/django/django/pull/2740
 
     3. Pinging the database before each operation to see if it is still available: django-apscheduler used to make use
        of this approach (see: https://github.com/jcass77/django-apscheduler/blob/9ac06b33d19961da6c36d5ac814d4338beb11309/django_apscheduler/models.py#L16-L51).
@@ -97,7 +96,7 @@ def retry_on_db_operational_error(func):
     def func_wrapper(*args, **kwargs):
         try:
             result = func(*args, **kwargs)
-        except db.OperationalError as e:
+        except (db.OperationalError, db.InterfaceError) as e:
             logger.warning(
                 f"DB error executing '{func.__name__}' ({e}). Retrying with a new DB connection..."
             )

@@ -2,6 +2,12 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
+## v0.6.1 (UNRELEASED)
+
+**Fixes**
+
+- Also handle `db.InterfaceError` when retrying database-related operations (thanks @zmmfsj-z).
+
 ## v0.6.0 (2021-06-17)
 
 **Fixes**
