@@ -17,7 +17,7 @@ django-apscheduler is a great choice for quickly and easily adding basic schedul
 with minimal dependencies and very little additional configuration. The ideal use case probably involves running a
 handful of tasks on a fixed execution schedule.
 
-The tradeoff of this simplicity is that you need to **be careful to ensure that you only have ***one*** scheduler
+The trade-off of this simplicity is that you need to **be careful to ensure that you only have ***one*** scheduler
 actively running at a particular point in time**.
 
 This limitation stems from the fact that APScheduler does not currently have any [interprocess synchronization and
@@ -157,35 +157,36 @@ class Command(BaseCommand):
     scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
     scheduler.add_jobstore(DjangoJobStore(), "default")
 
-        scheduler.add_job(
-            my_job,
-            trigger=CronTrigger(second="*/10"),  # Every 10 seconds
-            id="my_job",  # The `id` assigned to each job MUST be unique
-            max_instances=1,
-            replace_existing=True,
-        )
-        logger.info("Added job 'my_job'.")
+    scheduler.add_job(
+      my_job,
+      trigger=CronTrigger(second="*/10"),  # Every 10 seconds
+      id="my_job",  # The `id` assigned to each job MUST be unique
+      max_instances=1,
+      replace_existing=True,
+    )
+    logger.info("Added job 'my_job'.")
 
-        scheduler.add_job(
-            delete_old_job_executions,
-            trigger=CronTrigger(
-                day_of_week="mon", hour="00", minute="00"
-            ),  # Midnight on Monday, before start of the next work week.
-            id="delete_old_job_executions",
-            max_instances=1,
-            replace_existing=True,
-        )
-        logger.info(
-            "Added weekly job: 'delete_old_job_executions'."
-        )
+    scheduler.add_job(
+      delete_old_job_executions,
+      trigger=CronTrigger(
+        day_of_week="mon", hour="00", minute="00"
+      ),  # Midnight on Monday, before start of the next work week.
+      id="delete_old_job_executions",
+      max_instances=1,
+      replace_existing=True,
+    )
+    logger.info(
+      "Added weekly job: 'delete_old_job_executions'."
+    )
 
-        try:
-            logger.info("Starting scheduler...")
-            scheduler.start()
-        except KeyboardInterrupt:
-            logger.info("Stopping scheduler...")
-            scheduler.shutdown()
-            logger.info("Scheduler shut down successfully!")
+    try:
+      logger.info("Starting scheduler...")
+      scheduler.start()
+    except KeyboardInterrupt:
+      logger.info("Stopping scheduler...")
+      scheduler.shutdown()
+      logger.info("Scheduler shut down successfully!")
+
 ```
 
 - This management command should be invoked via `./manage.py runapscheduler` whenever the web server serving your Django
