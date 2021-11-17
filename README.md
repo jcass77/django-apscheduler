@@ -198,7 +198,7 @@ class Command(BaseCommand):
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job()` calls.
 
 
-Advanced Usage
+Advanced usage
 --------------
 
 django-apscheduler assumes that you are already familiar with APScheduler and its proper use. If not, then please head
@@ -213,7 +213,7 @@ depending on your environment and use case. If you would prefer running a `Backg
 order to re-enable threading support.
 
 
-Supported Databases
+Supported databases
 -------------------
 
 Please take note of the list of databases that
@@ -221,7 +221,7 @@ are [officially supported by Django](https://docs.djangoproject.com/en/dev/ref/d
 probably won't work with unsupported databases like Microsoft SQL Server, MongoDB, and the like.
 
 
-Database Connections and Timeouts
+Database connections and timeouts
 ---------------------------------
 
 django-apscheduler is dependent on the standard Django
@@ -247,16 +247,16 @@ Common footguns
 ---------------
 
 Unless you have a very specific set of requirements, and have intimate knowledge of the inner workings of APScheduler,
-you shouldn't be using `BackgroundScheduler`. This can lead to all sorts of temptations like:
+you shouldn't be using `BackgroundScheduler`. Doing so can lead to all sorts of temptations like:
 
 * Firing up a scheduler inside of a Django view. This will most likely cause more than one scheduler to run concurrently
   and lead to jobs running multiple times (see the above introduction to this README for a more thorough treatment of
   the subject).
-* Bootstrapping a scheduler somewhere else inside of your Django application. It feels like this should solve the
-  problem mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated
-  all of your background task processing to whatever webserver you are using (Gunicorn, uWSGI, etc.). It will probably
-  kill any long-running threads (your jobs) with extreme prejudice (thinking that they are caused by misbehaving HTTP
-  requests).
+* Bootstrapping a scheduler somewhere else inside your Django application. It feels like this should solve the problem
+  mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated the
+  management of all of your background task processing threads to whatever webserver you are using (Gunicorn, uWSGI,
+  etc.). The webserver will probably kill any long-running threads (your jobs) with extreme prejudice (thinking that
+  they are caused by misbehaving HTTP requests).
 
 Relying on `BlockingScheduler` forces you to run APScheduler in its own dedicated process that is not handled or
 monitored by the webserver. The example code provided in `runapscheduler.py` above is a good starting point.
