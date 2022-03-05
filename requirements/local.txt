@@ -2,12 +2,12 @@
 
 # Testing
 # ------------------------------------------------------------------------------
-pytest~=5.4  # https://github.com/pytest-dev/pytest
+pytest~=6.2  # https://github.com/pytest-dev/pytest
 pytest-sugar~=0.9  # https://github.com/Frozenball/pytest-sugar
 pytest-pythonpath~=0.7  # https://github.com/bigsassy/pytest-pythonpath
 
 # Django
 # ------------------------------------------------------------------------------
 django  # https://www.djangoproject.com/
-django-coverage-plugin~=1.6  # https://github.com/nedbat/django_coverage_plugin
-pytest-django~=3.6  # https://github.com/pytest-dev/pytest-django
+django-coverage-plugin~=2.0  # https://github.com/nedbat/django_coverage_plugin
+pytest-django~=4.5  # https://github.com/pytest-dev/pytest-django
