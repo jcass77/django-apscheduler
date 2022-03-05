@@ -26,12 +26,12 @@ that would enable the scheduler to be notified when a job has been added, modifi
 other words, different schedulers won't be able to tell if a job has already been run by another scheduler, and changing
 a job's scheduled run time directly in the database does nothing unless you also restart the scheduler).
 
-Depending on how you are doing your
-Django [deployments](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django)
-this may require a bit of thought. It is quite common to start up many webserver worker process in production
-environments in order to scale and handle large volumes of user traffic. If each of these worker processes ends up
-running its own scheduler then this can result in jobs being missed or executed multiple times, as well as duplicate
-entries in the `DjangoJobExecution` tables being created.
+Depending on how you are currently doing your
+Django [deployments](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django), working with this
+limitation might require a bit of thought. It is quite common to start up many webserver worker process in production
+environments in order to scale and handle large volumes of user traffic. If each of these worker processes end up
+running their own scheduler then this can result in jobs being missed or executed multiple times, as well as duplicate
+entries being created in the `DjangoJobExecution` table.
 
 Support for sharing a persistent job store between multiple schedulers appears to be planned for
 an [upcoming APScheduler 4.0 release](https://github.com/agronholm/apscheduler/issues/465).
