@@ -17,8 +17,7 @@ django-apscheduler is a great choice for quickly and easily adding basic schedul
 with minimal dependencies and very little additional configuration. The ideal use case probably involves running a
 handful of tasks on a fixed execution schedule.
 
-**Please note:** the trade-off of this simplicity is that you need to **be careful to ensure that you have only <u>
-one</u>
+**Please note:** the trade-off of this simplicity is that you need to **be careful to ensure that you have only ONE
 scheduler actively running at a particular point in time**.
 
 This limitation is due to the fact that APScheduler does not currently have
