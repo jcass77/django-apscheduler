@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 
 from django.db import models, transaction
+from django.db.models import UniqueConstraint
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -213,3 +214,8 @@ class DjangoJobExecution(models.Model):
 
     class Meta:
         ordering = ("-run_time",)
+        constraints = [
+            UniqueConstraint(
+                fields=["job_id", "run_time"], name="unique_job_executions"
+            )
+        ]

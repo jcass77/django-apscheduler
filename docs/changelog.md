@@ -2,6 +2,19 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
+## v0.6.1 (2022-03-05)
+
+**Fixes**
+
+- Also handle `db.InterfaceError` when retrying database-related operations (thanks @zmmfsj-z).
+- Add `unique_job_executions` constraint to ensure that only one `DjangoJobExecution` can be created for
+  each `DjangoJob` for a specific run time (Mitigates [#156](https://github.com/jcass77/django-apscheduler/issues/156)).
+- Update CI configuration to test on Django 3.2 and 4.0, and Python 3.10 (
+  Resolves [#163](https://github.com/jcass77/django-apscheduler/issues/163)).
+- Drop official support for Django<3.2 and Python<3.8. This is slightly ahead of the official dates published in
+  https://www.djangoproject.com/download/ and https://devguide.python.org/#status-of-python-branches, but makes the test
+  workflows simpler and easier to maintain. If you are using older releases they **might** still work...
+
 ## v0.6.0 (2021-06-17)
 
 **Fixes**
@@ -18,8 +31,8 @@ This changelog is used to track all major changes to django-apscheduler.
   a `django.db.OperationalError` is encountered (Partial resolution
   of [#145](https://github.com/jcass77/django-apscheduler/issues/145)).
 - Introduce a `close_old_connections` utility decorator to enforce Django's `CONN_MAX_AGE` setting. (Partial resolution
-  of [#145](https://github.com/jcass77/django-apscheduler/issues/145)). **This decorator should be applied to all of
-  your jobs that require access to the database.**
+  of [#145](https://github.com/jcass77/django-apscheduler/issues/145) - thanks @bluetech). **This decorator should be
+  applied to all of your jobs that require access to the database.**
 
 ## v0.5.2 (2021-01-28)
 

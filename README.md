@@ -17,7 +17,7 @@ django-apscheduler is a great choice for quickly and easily adding basic schedul
 with minimal dependencies and very little additional configuration. The ideal use case probably involves running a
 handful of tasks on a fixed execution schedule.
 
-The tradeoff of this simplicity is that you need to **be careful to ensure that you only have ***one*** scheduler
+The trade-off of this simplicity is that you need to **be careful to ensure that you only have ***one*** scheduler
 actively running at a particular point in time**.
 
 This limitation stems from the fact that APScheduler does not currently have any [interprocess synchronization and
@@ -131,60 +131,62 @@ logger = logging.getLogger(__name__)
 
 
 def my_job():
-    # Your job processing logic here...
-    pass
+  # Your job processing logic here...
+  pass
 
 
-# The `close_old_connections` decorator ensures that database connections, that have become unusable or are obsolete,
-# are closed before and after our job has run.
+# The `close_old_connections` decorator ensures that database connections, that have become
+# unusable or are obsolete, are closed before and after our job has run.
 @util.close_old_connections
 def delete_old_job_executions(max_age=604_800):
-    """
-    This job deletes APScheduler job execution entries older than `max_age` from the database. It helps to prevent the
-    database from filling up with old historical records that are no longer useful.
-    
-    :param max_age: The maximum length of time to retain historical job execution records. Defaults
-                    to 7 days.
-    """
-    DjangoJobExecution.objects.delete_old_job_executions(max_age)
+  """
+  This job deletes APScheduler job execution entries older than `max_age` from the database.
+  It helps to prevent the database from filling up with old historical records that are no
+  longer useful.
+  
+  :param max_age: The maximum length of time to retain historical job execution records.
+                  Defaults to 7 days.
+  """
+  DjangoJobExecution.objects.delete_old_job_executions(max_age)
 
 
 class Command(BaseCommand):
-    help = "Runs APScheduler."
+  help = "Runs APScheduler."
 
-    def handle(self, *args, **options):
-        scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
-        scheduler.add_jobstore(DjangoJobStore(), "default")
+  def handle(self, *args, **options):
+    scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
+    scheduler.add_jobstore(DjangoJobStore(), "default")
 
-        scheduler.add_job(
-            my_job,
-            trigger=CronTrigger(second="*/10"),  # Every 10 seconds
-            id="my_job",  # The `id` assigned to each job MUST be unique
-            max_instances=1,
-            replace_existing=True,
-        )
-        logger.info("Added job 'my_job'.")
+    scheduler.add_job(
+      my_job,
+      trigger=CronTrigger(second="*/10"),  # Every 10 seconds
+      id="my_job",  # The `id` assigned to each job MUST be unique
+      max_instances=1,
+      replace_existing=True,
+    )
+    logger.info("Added job 'my_job'.")
 
-        scheduler.add_job(
-            delete_old_job_executions,
-            trigger=CronTrigger(
-                day_of_week="mon", hour="00", minute="00"
-            ),  # Midnight on Monday, before start of the next work week.
-            id="delete_old_job_executions",
-            max_instances=1,
-            replace_existing=True,
-        )
-        logger.info(
-            "Added weekly job: 'delete_old_job_executions'."
-        )
+    scheduler.add_job(
+      delete_old_job_executions,
+      trigger=CronTrigger(
+        day_of_week="mon", hour="00", minute="00"
+      ),  # Midnight on Monday, before start of the next work week.
+      id="delete_old_job_executions",
+      max_instances=1,
+      replace_existing=True,
+    )
+    logger.info(
+      "Added weekly job: 'delete_old_job_executions'."
+    )
 
-        try:
-            logger.info("Starting scheduler...")
-            scheduler.start()
-        except KeyboardInterrupt:
-            logger.info("Stopping scheduler...")
-            scheduler.shutdown()
-            logger.info("Scheduler shut down successfully!")
+    try:
+      logger.info("Starting scheduler...")
+      scheduler.start()
+    except KeyboardInterrupt:
+      logger.info("Stopping scheduler...")
+      scheduler.shutdown()
+      logger.info("Scheduler shut down successfully!")
+
 ```
 
 - This management command should be invoked via `./manage.py runapscheduler` whenever the web server serving your Django
@@ -196,7 +198,7 @@ class Command(BaseCommand):
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job()` calls.
 
 
-Advanced Usage
+Advanced usage
 --------------
 
 django-apscheduler assumes that you are already familiar with APScheduler and its proper use. If not, then please head
@@ -211,7 +213,7 @@ depending on your environment and use case. If you would prefer running a `Backg
 order to re-enable threading support.
 
 
-Supported Databases
+Supported databases
 -------------------
 
 Please take note of the list of databases that
@@ -219,7 +221,7 @@ are [officially supported by Django](https://docs.djangoproject.com/en/dev/ref/d
 probably won't work with unsupported databases like Microsoft SQL Server, MongoDB, and the like.
 
 
-Database Connections and Timeouts
+Database connections and timeouts
 ---------------------------------
 
 django-apscheduler is dependent on the standard Django
@@ -245,16 +247,16 @@ Common footguns
 ---------------
 
 Unless you have a very specific set of requirements, and have intimate knowledge of the inner workings of APScheduler,
-you shouldn't be using `BackgroundScheduler`. This can lead to all sorts of temptations like:
+you shouldn't be using `BackgroundScheduler`. Doing so can lead to all sorts of temptations like:
 
 * Firing up a scheduler inside of a Django view. This will most likely cause more than one scheduler to run concurrently
   and lead to jobs running multiple times (see the above introduction to this README for a more thorough treatment of
   the subject).
-* Bootstrapping a scheduler somewhere else inside of your Django application. It feels like this should solve the
-  problem mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated
-  all of your background task processing to whatever webserver you are using (Gunicorn, uWSGI, etc.). It will probably
-  kill any long-running threads (your jobs) with extreme prejudice (thinking that they are caused by misbehaving HTTP
-  requests).
+* Bootstrapping a scheduler somewhere else inside your Django application. It feels like this should solve the problem
+  mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated the
+  management of all of your background task processing threads to whatever webserver you are using (Gunicorn, uWSGI,
+  etc.). The webserver will probably kill any long-running threads (your jobs) with extreme prejudice (thinking that
+  they are caused by misbehaving HTTP requests).
 
 Relying on `BlockingScheduler` forces you to run APScheduler in its own dedicated process that is not handled or
 monitored by the webserver. The example code provided in `runapscheduler.py` above is a good starting point.
