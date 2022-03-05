@@ -11,6 +11,9 @@ This changelog is used to track all major changes to django-apscheduler.
   each `DjangoJob` for a specific run time.
 - Update CI configuration to test on Django 3.2 and 4.0, and Python 3.10 (
   Resolves [#163](https://github.com/jcass77/django-apscheduler/issues/163)).
+- Drop official support for Django<3.2 and Python<3.8. This is slightly ahead of the official dates published in
+  https://www.djangoproject.com/download/ and https://devguide.python.org/#status-of-python-branches, but makes the test
+  workflows simpler and easier to maintain. If you are using older releases they **might** still work...
 
 ## v0.6.0 (2021-06-17)
 
