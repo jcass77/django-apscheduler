@@ -17,56 +17,64 @@ django-apscheduler is a great choice for quickly and easily adding basic schedul
 with minimal dependencies and very little additional configuration. The ideal use case probably involves running a
 handful of tasks on a fixed execution schedule.
 
-The trade-off of this simplicity is that you need to **be careful to ensure that you only have ***one*** scheduler
-actively running at a particular point in time**.
+**Please note:** the trade-off of this simplicity is that you need to **be careful to ensure that you have only <u>
+one</u>
+scheduler actively running at a particular point in time**.
 
-This limitation stems from the fact that APScheduler does not currently have any [interprocess synchronization and
-signalling scheme](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes) 
-that would enable the scheduler to be notified when a job has been added, modified, or removed from a job store.
- 
-Support for persistent job store sharing among multiple schedulers appears to be planned for an [upcoming APScheduler
-4.0 release](https://github.com/agronholm/apscheduler/issues/465). Until then, a typical Django [deployment in
-production](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django) will start up more than one
-worker process, and if each worker process ends up running its own scheduler then this could result in jobs being
-missed or executed multiple times, as well as duplicate entries in the `DjangoJobExecution` tables being created.
+This limitation is due to the fact that APScheduler does not currently have
+any [interprocess synchronization and signalling scheme](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
+that would enable the scheduler to be notified when a job has been added, modified, or removed from a job store (in
+other words, different schedulers won't be able to tell if a job has already been run by another scheduler, and changing
+a job's scheduled run time directly in the database does nothing unless you also restart the scheduler).
+
+Support for sharing a persistent job store between multiple schedulers appears to be planned for
+an [upcoming APScheduler 4.0 release](https://github.com/agronholm/apscheduler/issues/465). Until that release becomes
+available, running multiple schedulers is not safe. This is because a typical
+Django [deployment in production](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django)
+will start up more than one webserver worker process, and if each worker process ends up running its own scheduler then
+this could result in jobs being missed or executed multiple times, as well as duplicate entries in the
+`DjangoJobExecution` tables being created.
 
 So for now your options are to either:
 
 1. Use a custom Django management command to start a single scheduler in its own dedicated process (**recommended** -
    see the `runapscheduler.py` example below); or
- 
-2. Implement your own [remote processing](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
-   logic to ensure that a single `DjangoJobStore` can be used by all of the web server's worker processes in a
+
+2. Implement your
+   own [remote processing](https://apscheduler.readthedocs.io/en/latest/faq.html#how-do-i-share-a-single-job-store-among-one-or-more-worker-processes)
+   logic to ensure that a single `DjangoJobStore` can be used by all of the webserver's worker processes in a
    coordinated and synchronized way (might not be worth the extra effort and increased complexity for most use cases);
    or
-  
-3. Select an alternative task processing library that *does* support inter-process communication using some sort of
-   shared message broker like Redis, RabbitMQ, Amazon SQS or the like (see: 
-   https://djangopackages.org/grids/g/workers-queues-tasks/ for popular options).
-  
-Features of this package include:
 
-- A custom `DjangoJobStore`:
-  an [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
-  that persists scheduled jobs to the Django database. You can view the scheduled jobs and monitor the job execution
-  directly via the Django admin interface:
+3. Select an alternative task processing library that *does* support inter-process communication using some sort of
+   shared message broker like Redis, RabbitMQ, Amazon SQS or the like (see:
+   https://djangopackages.org/grids/g/workers-queues-tasks/ for popular options).
+
+Features
+--------
+
+- A custom [APScheduler job store](https://apscheduler.readthedocs.io/en/latest/extending.html#custom-job-stores)
+  (`DjangoJobStore`) that persists scheduled jobs to the Django database. You can view the scheduled jobs and monitor
+  the job execution directly via the Django admin interface:
 
   ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/job_overview.png)
-  
+
 - The job store also maintains a history of all job executions of the currently scheduled jobs, along with status codes
   and exceptions (if any):
 
   ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/execution_overview.png)
-  
-- **Note:** APScheduler will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
+
+  **Note:** APScheduler
+  will [automatically remove jobs](https://apscheduler.readthedocs.io/en/latest/userguide.html#removing-jobs)
   from the job store as soon as their last scheduled execution has been triggered. This will also delete the
-  corresponding job execution entries from the database (i.e. job execution logs are only maintained for 'active' jobs.)
-    
+  corresponding job execution entries from the database (i.e. job execution logs are only maintained for 'active'
+  jobs.):
+
 - Job executions can also be triggered manually via the `DjangoJob` admin page:
 
   ![Jobs](https://raw.githubusercontent.com/jcass77/django-apscheduler/main/docs/screenshots/run_now.png)
-  
-- **Note:** In order to prevent long running jobs from causing the Django HTTP request to time out, the combined maximum
+
+  **Note:** In order to prevent long running jobs from causing the Django HTTP request to time out, the combined maximum
   run time for all APScheduler jobs that are started via the Django admin site is 25 seconds. This timeout value can be
   configured via the `APSCHEDULER_RUN_NOW_TIMEOUT` setting.
 
@@ -77,6 +85,7 @@ Installation
 ```python
 pip install django-apscheduler
 ```
+
 
 Quick start
 -----------
@@ -136,7 +145,8 @@ def my_job():
 
 
 # The `close_old_connections` decorator ensures that database connections, that have become
-# unusable or are obsolete, are closed before and after our job has run.
+# unusable or are obsolete, are closed before and after our job has run. You should use it
+# to wrap any jobs that you schedule that accesses the Django database in any way. 
 @util.close_old_connections
 def delete_old_job_executions(max_age=604_800):
   """
@@ -189,11 +199,11 @@ class Command(BaseCommand):
 
 ```
 
-- This management command should be invoked via `./manage.py runapscheduler` whenever the web server serving your Django
-  application is started. The details of how and where this should be done is implementation specific, and depends on
-  which web server you are using and how you are deploying your application to production. For most people this should
-  involve configuring a [supervisor](http://supervisord.org) process of sorts. 
-  
+- The management command defined above should be invoked via `./manage.py runapscheduler` whenever the webserver serving
+  your Django application is started. The details of how and where this should be done is implementation specific, and
+  depends on which webserver you are using and how you are deploying your application to production. For most people
+  this should involve configuring a [supervisor](http://supervisord.org) process of sorts.
+
 - Register any APScheduler jobs as you would normally. Note that if you haven't set `DjangoJobStore` as the `'default'`
   job store, then you will need to include `jobstore='djangojobstore'` in your `scheduler.add_job()` calls.
 
@@ -247,14 +257,14 @@ Common footguns
 ---------------
 
 Unless you have a very specific set of requirements, and have intimate knowledge of the inner workings of APScheduler,
-you shouldn't be using `BackgroundScheduler`. Doing so can lead to all sorts of temptations like:
+you really shouldn't be using `BackgroundScheduler`. Doing so can lead to all sorts of temptations like:
 
-* Firing up a scheduler inside of a Django view. This will most likely cause more than one scheduler to run concurrently
-  and lead to jobs running multiple times (see the above introduction to this README for a more thorough treatment of
-  the subject).
-* Bootstrapping a scheduler somewhere else inside your Django application. It feels like this should solve the problem
-  mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated the
-  management of all of your background task processing threads to whatever webserver you are using (Gunicorn, uWSGI,
+* **Firing up a scheduler inside of a Django view:** this will most likely cause more than one scheduler to run
+  concurrently and lead to jobs running multiple times (see the above introduction to this README for a more thorough
+  treatment of the subject).
+* **Bootstrapping a scheduler somewhere else inside your Django application**: it feels like this should solve the
+  problem mentioned above and guarantee that only one scheduler is running. The downside is that you have just delegated
+  the management of all of your background task processing threads to whatever webserver you are using (Gunicorn, uWSGI,
   etc.). The webserver will probably kill any long-running threads (your jobs) with extreme prejudice (thinking that
   they are caused by misbehaving HTTP requests).
 
