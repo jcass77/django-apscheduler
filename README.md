@@ -17,7 +17,7 @@ django-apscheduler is a great choice for quickly and easily adding basic schedul
 with minimal dependencies and very little additional configuration. The ideal use case probably involves running a
 handful of tasks on a fixed execution schedule.
 
-**Please note:** the trade-off of this simplicity is that you need to **be careful to ensure that you have only ONE
+**PLEASE NOTE:** the trade-off of this simplicity is that you need to **be careful to ensure that you have only ONE
 scheduler actively running at a particular point in time**.
 
 This limitation is due to the fact that APScheduler does not currently have
@@ -26,13 +26,15 @@ that would enable the scheduler to be notified when a job has been added, modifi
 other words, different schedulers won't be able to tell if a job has already been run by another scheduler, and changing
 a job's scheduled run time directly in the database does nothing unless you also restart the scheduler).
 
+Depending on how you are doing your
+Django [deployments](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django)
+this may require a bit of thought. It is quite common to start up many webserver worker process in production
+environments in order to scale and handle large volumes of user traffic. If each of these worker processes ends up
+running its own scheduler then this can result in jobs being missed or executed multiple times, as well as duplicate
+entries in the `DjangoJobExecution` tables being created.
+
 Support for sharing a persistent job store between multiple schedulers appears to be planned for
-an [upcoming APScheduler 4.0 release](https://github.com/agronholm/apscheduler/issues/465). Until that release becomes
-available, running multiple schedulers is not safe. This is because a typical
-Django [deployment in production](https://docs.djangoproject.com/en/dev/howto/deployment/#deploying-django)
-will start up more than one webserver worker process, and if each worker process ends up running its own scheduler then
-this could result in jobs being missed or executed multiple times, as well as duplicate entries in the
-`DjangoJobExecution` tables being created.
+an [upcoming APScheduler 4.0 release](https://github.com/agronholm/apscheduler/issues/465).
 
 So for now your options are to either:
 
