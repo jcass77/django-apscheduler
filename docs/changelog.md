@@ -2,13 +2,13 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
-## v0.6.1 (UNRELEASED)
+## v0.6.1 (2022-03-05)
 
 **Fixes**
 
 - Also handle `db.InterfaceError` when retrying database-related operations (thanks @zmmfsj-z).
 - Add `unique_job_executions` constraint to ensure that only one `DjangoJobExecution` can be created for
-  each `DjangoJob` for a specific run time.
+  each `DjangoJob` for a specific run time (Mitigates [#156](https://github.com/jcass77/django-apscheduler/issues/156)).
 - Update CI configuration to test on Django 3.2 and 4.0, and Python 3.10 (
   Resolves [#163](https://github.com/jcass77/django-apscheduler/issues/163)).
 - Drop official support for Django<3.2 and Python<3.8. This is slightly ahead of the official dates published in
