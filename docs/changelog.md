@@ -2,6 +2,12 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
+## v0.6.2 (2022-03-06)
+
+**Fixes**
+
+- Make and commit missing migrations (Resolves [#165](https://github.com/jcass77/django-apscheduler/issues/165)).
+
 ## v0.6.1 (2022-03-05)
 
 **Fixes**
