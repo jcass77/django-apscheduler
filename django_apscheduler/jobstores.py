@@ -255,7 +255,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
                     job.__getstate__(), self.pickle_protocol
                 )
 
-                db_job.save()
+                db_job.save(force_update=True)
 
             except DjangoJob.DoesNotExist:
                 raise JobLookupError(job.id)
