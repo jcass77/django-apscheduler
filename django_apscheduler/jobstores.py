@@ -248,24 +248,25 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         # Acquire lock for update
         with transaction.atomic():
             try:
-                db_job = DjangoJob.objects.get(id=job.id)
+                db_job = DjangoJob.objects.select_for_update().get(id=job.id)
 
                 db_job.next_run_time = get_django_internal_datetime(job.next_run_time)
                 db_job.job_state = pickle.dumps(
                     job.__getstate__(), self.pickle_protocol
                 )
 
-                db_job.save(force_update=True)
+                db_job.save()
 
             except DjangoJob.DoesNotExist:
                 raise JobLookupError(job.id)
 
     @util.retry_on_db_operational_error
     def remove_job(self, job_id: str):
-        try:
-            DjangoJob.objects.get(id=job_id).delete()
-        except DjangoJob.DoesNotExist:
-            raise JobLookupError(job_id)
+        with transaction.atomic():
+            try:
+                DjangoJob.objects.select_for_update().get(id=job_id).delete()
+            except DjangoJob.DoesNotExist:
+                raise JobLookupError(job_id)
 
     @util.retry_on_db_operational_error
     def remove_all_jobs(self):
