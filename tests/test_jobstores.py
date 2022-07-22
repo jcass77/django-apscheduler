@@ -237,7 +237,7 @@ class TestDjangoJobStore:
         with mock.patch.object(db.connection, "close") as close_mock:
             with pytest.raises(db.OperationalError, match="Some DB-related error"):
                 with mock.patch(
-                        "django_apscheduler.jobstores.DjangoJob.objects.get",
+                        "django_apscheduler.jobstores.DjangoJob.objects.select_for_update",
                         side_effect=conftest.raise_db_operational_error,
                 ):
                     jobstore.update_job(job)
@@ -249,7 +249,7 @@ class TestDjangoJobStore:
         with mock.patch.object(db.connection, "close") as close_mock:
             with pytest.raises(db.OperationalError, match="Some DB-related error"):
                 with mock.patch(
-                        "django_apscheduler.jobstores.DjangoJob.objects.get",
+                        "django_apscheduler.jobstores.DjangoJob.objects.select_for_update",
                         side_effect=conftest.raise_db_operational_error,
                 ):
                     jobstore.remove_job("some job")
