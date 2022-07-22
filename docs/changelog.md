@@ -2,6 +2,13 @@
 
 This changelog is used to track all major changes to django-apscheduler.
 
+## v0.6.3 (UNRELEASED)
+
+**Fixes**
+
+- Take a database lock before updating / deleting job store entries to prevent duplicate key violation errors (thanks
+  @calledbert).
+
 ## v0.6.2 (2022-03-06)
 
 **Fixes**
