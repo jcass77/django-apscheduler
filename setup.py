@@ -13,7 +13,7 @@ setup(
     description="APScheduler for Django",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="http://github.com/jcass77/django-apscheduler",
+    url="http://github.com/openimis/django-apscheduler",
     author="Jarek Glowacki, Stas Kaledin, John Cass",
     author_email="jarekwg@gmail.com, staskaledin@gmail.com, john.cass77@gmail.com",
     license="MIT",
@@ -33,7 +33,7 @@ setup(
         "Framework :: Django :: 3.2",
         "Framework :: Django :: 4.0",
     ],
-    keywords="django apscheduler django-apscheduler",
+    keywords="django apscheduler django-apscheduler mssql sqlserver",
     packages=find_packages(exclude=("tests",)),
     install_requires=[
         "django>=3.2",

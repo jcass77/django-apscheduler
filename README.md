@@ -10,6 +10,8 @@ Django APScheduler
 
 [APScheduler](https://github.com/agronholm/apscheduler) for [Django](https://github.com/django/django).
 
+This fork is specifically intended to support Microsoft SQL Server.
+
 This is a Django app that adds a lightweight wrapper around APScheduler. It enables storing persistent jobs in the
 database using Django's ORM.
 
