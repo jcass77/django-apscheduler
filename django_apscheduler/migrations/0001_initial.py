@@ -29,7 +29,9 @@ class Migration(migrations.Migration):
                 ("next_run_time", models.DateTimeField(db_index=True)),
                 ("job_state", models.BinaryField()),
             ],
-            options={"ordering": ("next_run_time",),},
+            options={
+                "ordering": ("next_run_time",),
+            },
         ),
         migrations.CreateModel(
             name="DjangoJobExecution",
@@ -88,6 +90,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ("-run_time",),},
+            options={
+                "ordering": ("-run_time",),
+            },
         ),
     ]

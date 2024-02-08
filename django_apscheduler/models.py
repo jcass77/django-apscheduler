@@ -1,8 +1,9 @@
 from datetime import timedelta, datetime
 
 from django.db import models, transaction
+from django.db.models import UniqueConstraint
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 import logging
 
@@ -58,7 +59,14 @@ class DjangoJobExecution(models.Model):
     MAX_INSTANCES = "Max instances!"
     ERROR = "Error!"
 
-    STATUS_CHOICES = [(x, x) for x in [SENT, ERROR, SUCCESS,]]
+    STATUS_CHOICES = [
+        (x, x)
+        for x in [
+            SENT,
+            ERROR,
+            SUCCESS,
+        ]
+    ]
 
     id = models.BigAutoField(
         primary_key=True, help_text=_("Unique ID for this job execution.")
@@ -79,7 +87,8 @@ class DjangoJobExecution(models.Model):
     )
 
     run_time = models.DateTimeField(
-        db_index=True, help_text=_("Date and time at which this job was executed."),
+        db_index=True,
+        help_text=_("Date and time at which this job was executed."),
     )
 
     # We store this value in the DB even though it can be calculated as `finished - run_time`. This allows quick
@@ -118,6 +127,7 @@ class DjangoJobExecution(models.Model):
     objects = DjangoJobExecutionManager()
 
     @classmethod
+    @util.retry_on_db_operational_error
     def atomic_update_or_create(
         cls,
         lock,
@@ -128,7 +138,7 @@ class DjangoJobExecution(models.Model):
         traceback: str = None,
     ) -> "DjangoJobExecution":
         """
-        Uses an APScheduler lock to ensures that only one database entry can be created / updated at a time.
+        Uses an APScheduler lock to ensure that only one database entry can be created / updated at a time.
 
         This keeps django_apscheduler in sync with APScheduler and maintains a 1:1 mapping between APScheduler events
         that are triggered and the corresponding DjangoJobExecution model instances that are persisted to the database.
@@ -141,7 +151,7 @@ class DjangoJobExecution(models.Model):
         :return: The ID of the newly created or updated DjangoJobExecution.
         """
 
-        # Ensure that only one update / created can be processed at a time, staying in sync with corresponding
+        # Ensure that only one update / create can be processed at a time, staying in sync with corresponding
         # scheduler.
         with lock:
             # Convert all datetimes to internal Django format before doing calculations and persisting in the database.
@@ -204,3 +214,8 @@ class DjangoJobExecution(models.Model):
 
     class Meta:
         ordering = ("-run_time",)
+        constraints = [
+            UniqueConstraint(
+                fields=["job_id", "run_time"], name="unique_job_executions"
+            )
+        ]

@@ -13,6 +13,7 @@ from apscheduler.schedulers.base import BaseScheduler
 from django import db
 from django.db import transaction, IntegrityError
 
+from django_apscheduler import util
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
 from django_apscheduler.util import (
     get_apscheduler_datetime,
@@ -41,36 +42,43 @@ class DjangoResultStoreMixin:
         Create and return new job execution instance in the database when the job is submitted to the scheduler.
 
         :param event: JobExecutionEvent instance
-        :return: DjangoJobExecution ID
+        :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
-        if event.code == events.EVENT_JOB_SUBMITTED:
-            # Start logging a new job execution
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_times[0],
-                DjangoJobExecution.SENT,
-            )
-        elif event.code == events.EVENT_JOB_MAX_INSTANCES:
-            status = DjangoJobExecution.MAX_INSTANCES
+        try:
+            if event.code == events.EVENT_JOB_SUBMITTED:
+                # Start logging a new job execution
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_times[0],
+                    DjangoJobExecution.SENT,
+                )
 
-            exception = (
-                f"Execution of job '{event.job_id}' skipped: maximum number of running "
-                f"instances reached!"
-            )
+            elif event.code == events.EVENT_JOB_MAX_INSTANCES:
+                status = DjangoJobExecution.MAX_INSTANCES
 
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_times[0],
-                status,
-                exception=exception,
+                exception = (
+                    f"Execution of job '{event.job_id}' skipped: maximum number of running "
+                    f"instances reached!"
+                )
+
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_times[0],
+                    status,
+                    exception=exception,
+                )
+            else:
+                raise NotImplementedError(
+                    f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
+                    f"one of '{[events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES]}'."
+                )
+        except IntegrityError:
+            logger.warning(
+                f"Job '{event.job_id}' no longer exists! Skipping logging of job execution..."
             )
-        else:
-            raise NotImplementedError(
-                f"Don't know how to handle JobSubmissionEvent '{event.code}'. Expected "
-                f"one of '{[events.EVENT_JOB_SUBMITTED, events.EVENT_JOB_MAX_INSTANCES]}'."
-            )
+            return None
 
         return job_execution.id
 
@@ -104,49 +112,55 @@ class DjangoResultStoreMixin:
         return job_execution.id
 
     @classmethod
-    def handle_error_event(cls, event: JobExecutionEvent) -> int:
+    def handle_error_event(cls, event: JobExecutionEvent) -> Union[int, None]:
         """
         Store "failed" job execution status in the database.
 
         :param event: JobExecutionEvent instance
-        :return: DjangoJobExecution ID
+        :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
-        if event.code == events.EVENT_JOB_ERROR:
+        try:
+            if event.code == events.EVENT_JOB_ERROR:
 
-            if event.exception:
-                exception = str(event.exception)
-                traceback = str(event.traceback)
+                if event.exception:
+                    exception = str(event.exception)
+                    traceback = str(event.traceback)
+                else:
+                    exception = f"Job '{event.job_id}' raised an error!"
+                    traceback = None
+
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_time,
+                    DjangoJobExecution.ERROR,
+                    exception=exception,
+                    traceback=traceback,
+                )
+
+            elif event.code == events.EVENT_JOB_MISSED:
+                # Job execution will not have been logged yet - do so now
+                status = DjangoJobExecution.MISSED
+                exception = f"Run time of job '{event.job_id}' was missed!"
+
+                job_execution = DjangoJobExecution.atomic_update_or_create(
+                    cls.lock,
+                    event.job_id,
+                    event.scheduled_run_time,
+                    status,
+                    exception=exception,
+                )
+
             else:
-                exception = f"Job '{event.job_id}' raised an error!"
-                traceback = None
-
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_time,
-                DjangoJobExecution.ERROR,
-                exception=exception,
-                traceback=traceback,
+                raise NotImplementedError(
+                    f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
+                    f"one of '{[events.EVENT_JOB_ERROR, events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]}'."
+                )
+        except IntegrityError:
+            logger.warning(
+                f"Job '{event.job_id}' no longer exists! Skipping logging of job execution..."
             )
-
-        elif event.code == events.EVENT_JOB_MISSED:
-            # Job execution will not have been logged yet - do so now
-            status = DjangoJobExecution.MISSED
-            exception = f"Run time of job '{event.job_id}' was missed!"
-
-            job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
-                event.job_id,
-                event.scheduled_run_time,
-                status,
-                exception=exception,
-            )
-
-        else:
-            raise NotImplementedError(
-                f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
-                f"one of '{[events.EVENT_JOB_ERROR, events.EVENT_JOB_MAX_INSTANCES, events.EVENT_JOB_MISSED]}'."
-            )
+            return None
 
         return job_execution.id
 
@@ -168,7 +182,8 @@ class DjangoResultStoreMixin:
         )
 
         self._scheduler.add_listener(
-            self.handle_error_event, events.EVENT_JOB_ERROR | events.EVENT_JOB_MISSED,
+            self.handle_error_event,
+            events.EVENT_JOB_ERROR | events.EVENT_JOB_MISSED,
         )
 
 
@@ -186,6 +201,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         super().__init__()
         self.pickle_protocol = pickle_protocol
 
+    @util.retry_on_db_operational_error
     def lookup_job(self, job_id: str) -> Union[None, AppSchedulerJob]:
         try:
             job_state = DjangoJob.objects.get(id=job_id).job_state
@@ -198,6 +214,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
         dt = get_django_internal_datetime(now)
         return self._get_jobs(next_run_time__lte=dt)
 
+    @util.retry_on_db_operational_error
     def get_next_run_time(self):
         try:
             job = DjangoJob.objects.filter(next_run_time__isnull=False).earliest(
@@ -214,6 +231,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
         return jobs
 
+    @util.retry_on_db_operational_error
     def add_job(self, job: AppSchedulerJob):
         with transaction.atomic():
             try:
@@ -225,11 +243,12 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             except IntegrityError:
                 raise ConflictingIdError(job.id)
 
+    @util.retry_on_db_operational_error
     def update_job(self, job: AppSchedulerJob):
         # Acquire lock for update
         with transaction.atomic():
             try:
-                db_job = DjangoJob.objects.get(id=job.id)
+                db_job = DjangoJob.objects.select_for_update().get(id=job.id)
 
                 db_job.next_run_time = get_django_internal_datetime(job.next_run_time)
                 db_job.job_state = pickle.dumps(
@@ -241,12 +260,15 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
             except DjangoJob.DoesNotExist:
                 raise JobLookupError(job.id)
 
+    @util.retry_on_db_operational_error
     def remove_job(self, job_id: str):
-        try:
-            DjangoJob.objects.get(id=job_id).delete()
-        except DjangoJob.DoesNotExist:
-            raise JobLookupError(job_id)
+        with transaction.atomic():
+            try:
+                DjangoJob.objects.select_for_update().get(id=job_id).delete()
+            except DjangoJob.DoesNotExist:
+                raise JobLookupError(job_id)
 
+    @util.retry_on_db_operational_error
     def remove_all_jobs(self):
         # Implicit: will also delete all DjangoJobExecutions due to on_delete=models.CASCADE
         DjangoJob.objects.all().delete()
@@ -263,6 +285,7 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
         return job
 
+    @util.retry_on_db_operational_error
     def _get_jobs(self, **filters):
         jobs = []
         failed_job_ids = set()
@@ -313,7 +336,7 @@ def register_job(scheduler: BaseScheduler, *args, **kwargs) -> callable:
     Helper decorator for job registration.
 
     Automatically fills id parameter to prevent jobs duplication.
-    See this comment for explanation: https://github.com/jarekwg/django-apscheduler/pull/9#issuecomment-342074372
+    See this comment for explanation: https://github.com/jcass77/django-apscheduler/pull/9#issuecomment-342074372
 
     Usage example::
 

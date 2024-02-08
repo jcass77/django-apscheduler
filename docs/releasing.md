@@ -10,9 +10,27 @@ key individuals, and as a stepping stone to more automation.
 
 2. Bump the version number in `setup.py` and commit changes.
 
-3. Push to GitHub.
+3. Merge the release branch (``develop`` in the example) into ``main``:
 
-4. Create a new release on GitHub: https://github.com/jarekwg/django-apscheduler/releases/new
+    ```
+    git checkout main
+    git merge --no-ff -m "Release v0.0.1" develop
+    ```
 
-    - Set both tag version and release title to the semantic version number (e.g. "0.4.1") 
-    - Clicking "Publish" will automatically trigger a new release to get pushed to PyPi.
+4. Tag the release:
+
+    ```
+    git tag -a -m "Release v0.0.1" v0.0.1
+    ```
+
+5. Push to GitHub:
+
+    ```
+    git push --follow-tags
+    ```
+
+6. Merge ``main`` back into ``develop`` and push the branch to GitHub.
+
+7. Create a new release on GitHub: https://github.com/jcass77/django-apscheduler/releases/new
+
+8. Clicking "Publish" will automatically trigger a new release to get pushed to PyPi.
