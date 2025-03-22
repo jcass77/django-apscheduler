@@ -36,19 +36,20 @@ class DjangoResultStoreMixin:
 
         self.register_event_listeners()
 
-    @classmethod
-    def handle_submission_event(cls, event: JobSubmissionEvent):
+    def handle_submission_event(self, event: JobSubmissionEvent):
         """
         Create and return new job execution instance in the database when the job is submitted to the scheduler.
 
         :param event: JobExecutionEvent instance
         :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
+        if event.jobstore != self._alias:
+            return None
         try:
             if event.code == events.EVENT_JOB_SUBMITTED:
                 # Start logging a new job execution
                 job_execution = DjangoJobExecution.atomic_update_or_create(
-                    cls.lock,
+                    self.lock,
                     event.job_id,
                     event.scheduled_run_times[0],
                     DjangoJobExecution.SENT,
@@ -63,7 +64,7 @@ class DjangoResultStoreMixin:
                 )
 
                 job_execution = DjangoJobExecution.atomic_update_or_create(
-                    cls.lock,
+                    self.lock,
                     event.job_id,
                     event.scheduled_run_times[0],
                     status,
@@ -82,14 +83,15 @@ class DjangoResultStoreMixin:
 
         return job_execution.id
 
-    @classmethod
-    def handle_execution_event(cls, event: JobExecutionEvent) -> Union[int, None]:
+    def handle_execution_event(self, event: JobExecutionEvent) -> Union[int, None]:
         """
         Store "successful" job execution status in the database.
 
         :param event: JobExecutionEvent instance
         :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
+        if event.jobstore != self._alias:
+            return None
         if event.code != events.EVENT_JOB_EXECUTED:
             raise NotImplementedError(
                 f"Don't know how to handle JobExecutionEvent '{event.code}'. Expected "
@@ -98,7 +100,7 @@ class DjangoResultStoreMixin:
 
         try:
             job_execution = DjangoJobExecution.atomic_update_or_create(
-                cls.lock,
+                self.lock,
                 event.job_id,
                 event.scheduled_run_time,
                 DjangoJobExecution.SUCCESS,
@@ -111,14 +113,15 @@ class DjangoResultStoreMixin:
 
         return job_execution.id
 
-    @classmethod
-    def handle_error_event(cls, event: JobExecutionEvent) -> Union[int, None]:
+    def handle_error_event(self, event: JobExecutionEvent) -> Union[int, None]:
         """
         Store "failed" job execution status in the database.
 
         :param event: JobExecutionEvent instance
         :return: DjangoJobExecution ID or None if the job execution could not be logged.
         """
+        if event.jobstore != self._alias:
+            return None
         try:
             if event.code == events.EVENT_JOB_ERROR:
 
@@ -130,7 +133,7 @@ class DjangoResultStoreMixin:
                     traceback = None
 
                 job_execution = DjangoJobExecution.atomic_update_or_create(
-                    cls.lock,
+                    self.lock,
                     event.job_id,
                     event.scheduled_run_time,
                     DjangoJobExecution.ERROR,
@@ -144,7 +147,7 @@ class DjangoResultStoreMixin:
                 exception = f"Run time of job '{event.job_id}' was missed!"
 
                 job_execution = DjangoJobExecution.atomic_update_or_create(
-                    cls.lock,
+                    self.lock,
                     event.job_id,
                     event.scheduled_run_time,
                     status,

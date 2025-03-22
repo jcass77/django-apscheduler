@@ -28,7 +28,7 @@ class TestDjangoResultStoreMixin:
     @pytest.mark.django_db
     def test_handle_submission_event_not_supported_raises_exception(self, jobstore):
         event = JobSubmissionEvent(
-            events.EVENT_ALL, "test_job", jobstore, [timezone.now()]
+            events.EVENT_ALL, "test_job", jobstore._alias, [timezone.now()]
         )
 
         with pytest.raises(NotImplementedError):
@@ -46,7 +46,7 @@ class TestDjangoResultStoreMixin:
             self, event_code, jobstore, create_add_job
     ):
         job = create_add_job(jobstore, dummy_job, datetime(2016, 5, 3))
-        event = JobSubmissionEvent(event_code, job.id, jobstore, [timezone.now()])
+        event = JobSubmissionEvent(event_code, job.id, jobstore._alias, [timezone.now()])
         jobstore.handle_submission_event(event)
 
         assert DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
@@ -56,7 +56,7 @@ class TestDjangoResultStoreMixin:
             self, jobstore
     ):
         event = JobSubmissionEvent(
-            events.EVENT_JOB_SUBMITTED, "finished_job", jobstore, [timezone.now()]
+            events.EVENT_JOB_SUBMITTED, "finished_job", jobstore._alias, [timezone.now()]
         )
         jobstore.handle_submission_event(event)
 
@@ -65,7 +65,7 @@ class TestDjangoResultStoreMixin:
     @pytest.mark.django_db
     def test_handle_execution_event_not_supported_raises_exception(self, jobstore):
         event = JobExecutionEvent(
-            events.EVENT_ALL, "test_job", jobstore, timezone.now()
+            events.EVENT_ALL, "test_job", jobstore._alias, timezone.now()
         )
 
         with pytest.raises(NotImplementedError):
@@ -77,7 +77,7 @@ class TestDjangoResultStoreMixin:
     ):
         job = create_add_job(jobstore, dummy_job, datetime(2016, 5, 3))
         event = JobExecutionEvent(
-            events.EVENT_JOB_EXECUTED, job.id, jobstore, timezone.now()
+            events.EVENT_JOB_EXECUTED, job.id, jobstore._alias, timezone.now()
         )
         jobstore.handle_execution_event(event)
 
@@ -89,7 +89,7 @@ class TestDjangoResultStoreMixin:
     ):
         # Test for regression https://github.com/jcass77/django-apscheduler/issues/116
         event = JobExecutionEvent(
-            events.EVENT_JOB_EXECUTED, "finished_job", jobstore, timezone.now()
+            events.EVENT_JOB_EXECUTED, "finished_job", jobstore._alias, timezone.now()
         )
         jobstore.handle_execution_event(event)
 
@@ -98,7 +98,7 @@ class TestDjangoResultStoreMixin:
     @pytest.mark.django_db
     def test_handle_error_event_not_supported_raises_exception(self, jobstore):
         event = JobExecutionEvent(
-            events.EVENT_ALL, "test_job", jobstore, timezone.now()
+            events.EVENT_ALL, "test_job", jobstore._alias, timezone.now()
         )
 
         with pytest.raises(NotImplementedError):
@@ -116,7 +116,7 @@ class TestDjangoResultStoreMixin:
         self, jobstore, create_add_job, event_code
     ):
         job = create_add_job(jobstore, dummy_job, datetime(2016, 5, 3))
-        event = JobExecutionEvent(event_code, job.id, jobstore, timezone.now())
+        event = JobExecutionEvent(event_code, job.id, jobstore._alias, timezone.now())
         jobstore.handle_error_event(event)
 
         assert DjangoJobExecution.objects.filter(job_id=event.job_id).exists()
@@ -127,7 +127,7 @@ class TestDjangoResultStoreMixin:
     ):
         job = create_add_job(jobstore, dummy_job, datetime(2016, 5, 3))
         event = JobExecutionEvent(
-            events.EVENT_JOB_ERROR, job.id, jobstore, timezone.now()
+            events.EVENT_JOB_ERROR, job.id, jobstore._alias, timezone.now()
         )
         jobstore.handle_error_event(event)
 
@@ -140,7 +140,7 @@ class TestDjangoResultStoreMixin:
             self, jobstore
     ):
         event = JobExecutionEvent(
-            events.EVENT_JOB_ERROR, "finished_job", jobstore, timezone.now()
+            events.EVENT_JOB_ERROR, "finished_job", jobstore._alias, timezone.now()
         )
         jobstore.handle_error_event(event)
 
