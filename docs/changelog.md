@@ -4,11 +4,13 @@ This changelog is used to track all major changes to django-apscheduler.
 
 ## v0.7.1 (UNRELEASED)
 
-** Fixes **
+**Fixes**
 
 - Update Github Actions workflow
   for [publishing package to PyPi](https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-python#publishing-to-pypi).
 - Update Github workflow [status badge URL](https://github.com/badges/shields/issues/8671).
+- Prevent DjangoResultsStoreMixin from handling events of other job stores (
+  Resolves [#192](https://github.com/jcass77/django-apscheduler/issues/192) - thanks davekch@).
 
 ## v0.7.0 (2024-09-28)
 
