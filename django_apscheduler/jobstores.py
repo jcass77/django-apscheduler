@@ -11,7 +11,7 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.base import BaseScheduler
 
 from django import db
-from django.db import transaction, IntegrityError
+from django.db import transaction, IntegrityError, router
 
 from django_apscheduler import util
 from django_apscheduler.models import DjangoJob, DjangoJobExecution
@@ -236,7 +236,8 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
     @util.retry_on_db_operational_error
     def add_job(self, job: AppSchedulerJob):
-        with transaction.atomic():
+        db = router.db_for_write(DjangoJob)
+        with transaction.atomic(using=db):
             try:
                 return DjangoJob.objects.create(
                     id=job.id,
@@ -249,7 +250,8 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
     @util.retry_on_db_operational_error
     def update_job(self, job: AppSchedulerJob):
         # Acquire lock for update
-        with transaction.atomic():
+        db = router.db_for_write(DjangoJob)
+        with transaction.atomic(using=db):
             try:
                 db_job = DjangoJob.objects.select_for_update().get(id=job.id)
 
@@ -265,7 +267,8 @@ class DjangoJobStore(DjangoResultStoreMixin, BaseJobStore):
 
     @util.retry_on_db_operational_error
     def remove_job(self, job_id: str):
-        with transaction.atomic():
+        db = router.db_for_write(DjangoJob)
+        with transaction.atomic(using=db):
             try:
                 DjangoJob.objects.select_for_update().get(id=job_id).delete()
             except DjangoJob.DoesNotExist:

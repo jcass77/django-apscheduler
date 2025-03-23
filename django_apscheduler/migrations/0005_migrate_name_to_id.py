@@ -9,25 +9,26 @@ def migrate_name_to_id(apps, schema_editor):
     JobExecutionModel = apps.get_model("django_apscheduler", "DjangoJobExecution")
     migrated_id_mappings = {}
     migrated_job_executions = []
-
+    db = schema_editor.connection.alias
+    
     # Copy 'name' to 'id'.
-    for job in JobModel.objects.all():
+    for job in JobModel.objects.using(db).all():
         migrated_id_mappings[job.id] = job.name
         job.id = job.name
         job.name = f"{job.name}_tmp"
         job.save()
 
     # Update all job execution references
-    for job_execution in JobExecutionModel.objects.filter(
+    for job_execution in JobExecutionModel.objects.using(db).filter(
         job_id__in=migrated_id_mappings
     ):
         job_execution.job_id = migrated_id_mappings[job_execution.job_id]
         migrated_job_executions.append(job_execution)
 
-    JobExecutionModel.objects.bulk_update(migrated_job_executions, ["job_id"])
+    JobExecutionModel.objects.using(db).bulk_update(migrated_job_executions, ["job_id"])
 
     # Remove old jobs
-    JobModel.objects.filter(id__in=migrated_id_mappings).delete()
+    JobModel.objects.using(db).filter(id__in=migrated_id_mappings).delete()
 
 
 class Migration(migrations.Migration):

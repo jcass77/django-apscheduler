@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 
-from django.db import models, transaction
+from django.db import models, transaction, routers
 from django.db.models import UniqueConstraint
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -162,7 +162,8 @@ class DjangoJobExecution(models.Model):
             finished = finished.timestamp()
 
             try:
-                with transaction.atomic():
+                db = router.db_for_write(DjangoJobExecution)
+                with transaction.atomic(using=db):
                     job_execution = DjangoJobExecution.objects.select_for_update().get(
                         job_id=job_id, run_time=run_time
                     )
