@@ -11,7 +11,7 @@ def migrate_name_to_id(apps, schema_editor):
     migrated_job_executions = []
 
     # Copy 'name' to 'id'.
-    for job in JobModel.objects.all():
+    for job in JobModel.objects.all().using(schema_editor.connection.alias):
         migrated_id_mappings[job.id] = job.name
         job.id = job.name
         job.name = f"{job.name}_tmp"
