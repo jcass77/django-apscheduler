@@ -32,7 +32,13 @@ class DjangoJobAdmin(admin.ModelAdmin):
         self._job_execution_timeout = getattr(
             settings, "APSCHEDULER_RUN_NOW_TIMEOUT", 15
         )
-
+        
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+    
     def get_queryset(self, request):
         qs = super().get_queryset(request)
 
